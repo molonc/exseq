@@ -1,6 +1,10 @@
 # exseq
-This repository contains the code for the new expansion microscopy setup.
+This repository contains the code and design parts for the new expansion microscopy setup.
 
-Note: Fluidics, GSIOC, and Serial_COM are from the old MERFISH system with the peristaltic pump.
-
+Note: The following python files: fluidics, GSIOC, and Serial_COM are from the old MERFISH system with the peristaltic pump.
 GilsonMP3 can be run independently to control the persitaltic pump.
+
+The folder names "mechanical components" contains solidworks part files used for developping the shaker using in the expansion microscopy setup.
+"Print 1" contains the STL files and drawing of the first round of printing.
+The most important assembly to look at is: Shadi Discussed Smaller Design which contains all the parts used in the design.
+
