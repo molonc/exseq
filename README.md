@@ -15,3 +15,5 @@ The folder "key_mechanical_components" contains the parts that I am continuing t
 The "Boyden Lab Code" contains code from the Boyden for controlling their instruments when carrying out expansion microscopy. All of their code was written in Matlab.
 
 Testing_servo.m contains code for controlling the servo motor angles.
+
+Maybe_servoexseq.py contains code for controlling the shaker component in the expansion sequencing setup.
