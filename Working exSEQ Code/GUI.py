@@ -22,6 +22,7 @@ def initiate_fluidics_gui():
     skip_stages = {stage: tk.IntVar() for stage in speeds}
 
     def start_fluidics():
+        #this function is what happens when the start fluidics button is pressed 
         user_input = {
             "speeds": {stage: speed_vars[stage].get() for stage in speeds},
             "time_between_stages": int(time_between_stages.get()),
@@ -33,6 +34,7 @@ def initiate_fluidics_gui():
         root.destroy()
 
     def update_speed_entries(stage_name):
+        #this code is what blurs out the speed box when skip is selected 
         if skip_stages[stage_name].get() == 1:
             speed_entries[stage_name].delete(0, tk.END)
             speed_entries[stage_name].config(state=tk.DISABLED)
@@ -42,7 +44,6 @@ def initiate_fluidics_gui():
     # Create and lay out the GUI components
     fluidics_speeds_frame = ttk.Frame(root)
     fluidics_speeds_frame.pack()
-
     speed_entries = {}
     speed_vars = {}  # Store StringVar objects for Entry widgets
     for i, (stage, speed) in enumerate(speeds.items()):
