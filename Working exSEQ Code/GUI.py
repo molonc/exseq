@@ -1,75 +1,5 @@
 import tkinter as tk
 from tkinter import ttk
-import time
-
-# Initialize variables
-"""
-OLD CODE FOR THE GUI THAT WASN"T WORKING USED FOR REFERENCE
-
-
-speeds = {
-    "Stripping Solution": 0,
-    "PBST Short": 0,
-    "PBS": 0,
-    "Hybridization": 0,
-    "Ligation Buffer": 0,
-    "Ligation Solution": 0,
-    "PBST Long": 0,
-    "Imaging Buffer": 0,
-}
-
-time_between_stages = 0
-shaker_duration = 0
-skip_stages = []
-
-# Function to start the fluidics process
-def start_fluidics():
-    global speeds, time_between_stages, shaker_duration, skip_stages
-    time_between_stages = int(time_between_stages_entry.get())
-    shaker_duration = int(shaker_duration_entry.get())
-    skip_stages = [stage_name for stage_name, stage_var in stage_vars.items() if stage_var.get() == 1]
-    
-    status_label.config(text="Fluidics process started...")
-    
-    # Print the speed values
-    for stage_name, speed_entry in speed_entries.items():
-        speed_value = speed_entry.get()
-        if(speed_value == None):
-            print("None")
-        print(f"{stage_name} Speed: {speed_value} m/s")
-        
-        
-    # Implement your fluidics control logic here
-    # You can access speeds["StageName"] to get the speed for each stage
-    # You can access time_between_stages, shaker_duration, and skip_stages
-    
-    time.sleep(2)  # Simulate fluidics operation for 2 seconds
-    
-    status_label.config(text="Fluidics process complete.")
-
-# Returns stage speed 
-def get_speed_for_stage(stage_name, speeds):
-    # Check if the stage name exists in the speeds dictionary
-    if stage_name in speeds:
-        return speeds[stage_name]
-    else:
-        # Return a default speed (e.g., 0) if the stage name is not found
-        return 0
-
-# Function to disable speed input fields for skipped stages
-def update_speed_entries(stage_name):
-    if stage_vars[stage_name].get() == 1:
-        speed_entries[stage_name].delete(0, tk.END)
-        speed_entries[stage_name].config(state=tk.DISABLED)
-    else:
-        speed_entries[stage_name].config(state=tk.NORMAL)
-        """
-
-# Create the main application window
-
-
-import tkinter as tk
-from tkinter import ttk
 
 def initiate_fluidics_gui():
     root = tk.Tk()
@@ -116,7 +46,7 @@ def initiate_fluidics_gui():
     speed_entries = {}
     speed_vars = {}  # Store StringVar objects for Entry widgets
     for i, (stage, speed) in enumerate(speeds.items()):
-        ttk.Label(fluidics_speeds_frame, text=f"{stage} Speed (mL/s):").grid(row=i, column=0, padx=5, pady=5, sticky='e')
+        ttk.Label(fluidics_speeds_frame, text=f"{stage} Speed (mL/min):").grid(row=i, column=0, padx=5, pady=5, sticky='e')
         speed_var = tk.StringVar(value=str(speed))  # Create a StringVar for the Entry
         speed_entries[stage] = ttk.Entry(fluidics_speeds_frame, textvariable=speed_var)
         speed_entries[stage].grid(row=i, column=1, padx=5, pady=5)
