@@ -22,9 +22,8 @@ def initiate_fluidics_gui():
     skip_stages = {stage: tk.IntVar() for stage in speeds}
 
     def start_fluidics():
-        #this function is what happens when the start fluidics button is pressed 
         user_input = {
-            "speeds": {stage: speed_vars[stage].get() for stage in speeds},
+            "speeds": {stage: int(speed_vars[stage].get()) * 100 if speed_vars[stage].get() else 0 for stage in speeds},
             "time_between_stages": int(time_between_stages.get()),
             "shaker_duration": int(shaker_duration.get()),
             "skip_stages": {stage: skip_stages[stage].get() for stage in speeds}
@@ -34,7 +33,6 @@ def initiate_fluidics_gui():
         root.destroy()
 
     def update_speed_entries(stage_name):
-        #this code is what blurs out the speed box when skip is selected 
         if skip_stages[stage_name].get() == 1:
             speed_entries[stage_name].delete(0, tk.END)
             speed_entries[stage_name].config(state=tk.DISABLED)
@@ -65,23 +63,8 @@ def initiate_fluidics_gui():
     root.mainloop()
 
     return {
-        "speeds": {stage: int(speed_vars[stage].get())*100 for stage in speeds},
+        "speeds": {stage: int(speed_vars[stage].get()) * 100 if speed_vars[stage].get() else 0 for stage in speeds},  # Multiply by 100 here
         "time_between_stages": int(time_between_stages.get()),
         "shaker_duration": int(shaker_duration.get()),
         "skip_stages": {stage: skip_stages[stage].get() for stage in speeds}
     }
-
-#initiate_fluidics_gui()
-
-
-
-# Example of how to use the GUI function and access the collected data
-"""
-if __name__ == "__main__":
-    user_data = initiate_fluidics_gui()
-    print("Collected User Data:")
-    print("Speeds:", user_data["speeds"])
-    print("Time Between Stages:", user_data["time_between_stages"])
-    print("Shaker Duration:", user_data["shaker_duration"])
-    print("Skip Stages:", user_data["skip_stages"])
-"""
