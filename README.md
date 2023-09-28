@@ -17,3 +17,5 @@ The "Boyden Lab Code" contains code from the Boyden for controlling their instru
 Testing_servo.m contains code for controlling the servo motor angles.
 
 Maybe_servoexseq.py contains code for controlling the shaker component in the expansion sequencing setup.
+
+The "Working exSEQ code" contains the most current code that works with the exSeq Instrumentation. The main file is "fluidics.py" and it is dependent on the other python files. The "Python_Interpreter.cpp" and "Python_Interpreter.ino" are what is loaded onto the arduino so that it can recieve commands from the python and know what to do with it; either of these two files can be loaded onto the arduino since cpp and arduino are essentially the same. 
