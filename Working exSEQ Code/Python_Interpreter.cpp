@@ -30,12 +30,12 @@ void loop() {
         movementStartTime = millis(); // Record the start time of the movement
       }
     }
+
+  }
     // Check if it's time to stop the servo movement based on the duration
     if (durationMillis > 0 && millis() - movementStartTime >= durationMillis) {
       durationMillis = 0; // Reset the duration
       // You can take additional actions here if needed
   }
-  }
-
   
 }
