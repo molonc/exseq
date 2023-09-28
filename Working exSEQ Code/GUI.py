@@ -71,14 +71,12 @@ def initiate_fluidics_gui():
     
     
     """" THIS IS THE EXAMPLE CODE FOR HOW TO ACCESS THE DATA 
-    if __name__ == "__main__":
-        user_data = initiate_fluidics_gui()
-        print("Collected User Data:")
-        print("Speeds:", user_data["speeds"])
-        print("Time Between Stages:", user_data["time_between_stages"])
-        print("Shaker Duration:", user_data["shaker_duration"])
-        print("Skip Stages:", user_data["skip_stages"])
-    
-    
+if __name__ == "__main__":
+    user_data = initiate_fluidics_gui()
+    print("Collected User Data:")
+    print("Speeds:", user_data["speeds"])
+    print("Time Between Stages:", user_data["time_between_stages"])
+    print("Shaker Duration:", user_data["shaker_duration"])
+    print("Skip Stages:", user_data["skip_stages"])
     
     """
