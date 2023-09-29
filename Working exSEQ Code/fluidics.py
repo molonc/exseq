@@ -6,8 +6,7 @@ import GUI
 from pyfirmata import Arduino, SERVO
 from threading import Timer
 import threading
-
-# MVP3: 1-7 hybridization
+import serial
 # MVP1:
 #   - 1 1* PBS
 #   - 2 Hydrbidization Solution
@@ -22,14 +21,14 @@ import threading
 # servo_pin = 4
 
 # servo = board.get_pin(f's:{servo_pin}:s')
-import serial
-import time
 
-# Define the COM port (change this to your specific COM port)
+
+
+# Define the COM port (change this to your specific COM port) using to connect the Arduino board
 com_port = 'COM5'
 
 # Initialize the serial connection
-ser = serial.Serial(com_port, baudrate=9600)  
+ser = serial.Serial(com_port, baudrate=9600)
 
 def set_servo_duration(duration_seconds):
     try:
@@ -58,74 +57,78 @@ def move_servo(angle):
         # Handle other exceptions
         print(f"Error: {str(e)}")
 
-
-def timer_callback_stripping(pump):
-    global on_off
-    on_off = 3
-    gsioc.GSIOC.stop(pump)
-    print("primer done" + datetime.datetime.now())
-
 def stripping(mvp1, pump, user_data):
     cycle_id = "Stripping Solution"
     if user_data["skip_stages"][cycle_id] == 1:
         print(cycle_id + " was skipped")
         return
-    current_angle = ser.read()
-    on_off == 1
-
+    #current_angle = ser.read()
+    #on_off = 1
+    move_servo(90)
     # starting loop to make angle reach 135 degrees
-    while current_angle < 135:
+    # The code section below is commented out to as we do not
+    # need to adjust the angle of the coverslip to push fluid to it
+    """ while current_angle < 135:
         for current_angle in range (current_angle, 135):
             current_angle = current_angle + 9
             move_servo(current_angle)
             time.sleep(2)
-
+ """
     # setting MVP to correct valve so we have access to stripping fluid
     mvp.change_valve_pos(mvp1, 0, position(7))
     time.sleep(10)
-    print("stripping initiated"+ datetime.datetime.now())
-    
-    timer = Timer(3600, timer_callback_stripping)
 
-    timer.start()
+# Specify the duration in seconds
+    duration_seconds = 15  # Adjust this to the desired duration
 
-    gsioc.GSIOC.push(pump, user_data["speeds"][cycle_id]) #starting the pump
+    start_time = time.time()
 
+    pump.push(int(user_data["speeds"][cycle_id])) #starting the pump
 
-    # in the loop below, we push the stripping solution through the pump
-    # the fluid flows through the coverslip as the shaker starts shaking it
-    while on_off == 1:
+    print("Starting flow of stripping solution to coverslip " + str(datetime.datetime.now()))
 
+    while True:
+        elapsed_time = time.time() - start_time
+
+        if elapsed_time >= duration_seconds:
+            break  # Exit the loop when the desired duration is reached
+        
+    pump.stop()
+    print("Stopping flow of stripping solution to coverslip " + str(datetime.datetime.now()))
+
+    duration_seconds = 15
+    start_time = time.time()
+
+    print("Starting to Shake "+ str(datetime.datetime.now()) )
+    while True:
         for angle in range (108, 63, -9): #starting the shaking
             move_servo(angle)
             time.sleep(2)
-
-
         time.sleep(5)
-
         for angle in range (63, 108, 9):
             move_servo(angle)
             time.sleep(2)
-
         time.sleep(5)
-
-    time.sleep(45)
     
-def timer_callback_pbst_longwash(pump):
-    global on_off
-    on_off = 3
-    gsioc.GSIOC.stop(pump)
-    print('Wash done' + datetime.datetime.now())
+        # Calculate the elapsed time
+        elapsed_time = time.time() - start_time
+        
+        # Check if the desired duration has been reached
+        if elapsed_time >= duration_seconds:
+           break  # Exit the loop when the desired duration is reached
+    print("Shaking Completed "+ str(datetime.datetime.now()) )
+   
+    time.sleep(5)
 
 def pbst_longwash(mvp1, pump, user_data):
-    cycle_id = "PBST-Long"
+    cycle_id = "PBST Long"
     if user_data["skip_stages"][cycle_id] == 1:
         print(cycle_id + " was skipped")
         return
-    on_off = 1
+    
 
     #Moving servo to initial angle of 130
-    move_servo(0.75*180)
+    move_servo(90)
     time.sleep(2)
 
 
@@ -134,333 +137,354 @@ def pbst_longwash(mvp1, pump, user_data):
     time.sleep(10)
 
 
-    timer = Timer(5400, timer_callback_pbst_longwash)
-    print('PBST Long Wash Start' + datetime.datetime.now())
+    duration_seconds = 15
+
+    start_time = time.time()
+
+    pump.push(int(user_data["speeds"][cycle_id])) #starting the pump
+
+    print('PBST Long Wash Start ' + str(datetime.datetime.now()))
+    
+    while True:
+
+        elapsed_time = time.time() - start_time
+
+        if elapsed_time >= duration_seconds:
+            break  # Exit the loop when the desired duration is reached
+        
+    pump.stop()
+    print('PBST Long Wash Completed ' + str(datetime.datetime.now()))
 
 
     # in the loop below, we push the PBST wash solution through the pump
     # the fluid flows through the coverslip as the shaker starts shaking it
-    while on_off == 1:
-        gsioc.GSIOC.push(pump, user_data["speeds"][cycle_id])
-        timer.start()
-        for angle in range (108, 63):
-            angle = angle - 9
+
+    duration_seconds = 15
+
+    start_time = time.time()
+    print("Starting to Shake "+ str(datetime.datetime.now()) )
+    while True:
+        for angle in range (108, 63, -9):
             move_servo(angle)
             time.sleep(2)
 
         time.sleep(5)
 
-        for angle in range (63, 108):
-            angle = angle + 9
+        for angle in range (63, 108, 9):
             move_servo(angle)
             time.sleep(2)
         
         time.sleep(5) 
-
-    time.sleep(45)
-
-def timer_callback_PBS_6_callback(pump):
-    global on_off
-    on_off = 3
-    gsioc.GSIOC.stop(pump)
-    print(('Rinse done' + datetime("now")))
+        
+        elapsed_time = time.time() - start_time
+        if elapsed_time >= duration_seconds:
+            break
+        
+    print("Shaking Completed "+ str(datetime.datetime.now()) )    
+    time.sleep(5)
 
 def PBS_6(mvp1, pump, user_data):
     cycle_id = "PBS"
     if user_data["skip_stages"][cycle_id] == 1:
         print(cycle_id + " was skipped")
         return    
-    current_angle = servo.read()
-    on_off = 1
+    #current_angle = ser.read()
+    #on_off = 1
 
     # initializing angle of the shaker
-    while current_angle > 45:
+    """ while current_angle > 45:
         for current_angle in range (current_angle, 45):
             current_angle = current_angle - 9
             move_servo(current_angle)
-            time.sleep(2)
+            time.sleep(2) """
 
     mvp.change_valve_pos(mvp1, 0, position(1))
     time.sleep(10)
 
-    # setting MVP to correct valve so we have access to PBS for rinsing
-    timer = Timer(5400, timer_callback_PBS_6_callback)
+    duration_seconds = 15
+    
+    start_time = time.time()
 
-    print(('PBS Rinse Start' + datetime("now")))
+    gsioc.GSIOC.push(pump, user_data["speeds"][cycle_id])
+    print("PBS_6 Rinse Start "+ str(datetime.datetime.now()))
+    while True:
 
-    while on_off == 1:
-        gsioc.GSIOC.push(pump, user_data["speeds"][cycle_id])
-        timer.start()
+        elapsed_time = time.time() - start_time
 
-    time.sleep(45)
+        if elapsed_time >= duration_seconds:
+            break  # Exit the loop when the desired duration is reached
+        
+    pump.stop()
+    print("PBS_6 Rinse Completed "+ str(datetime.datetime.now()))
+    time.sleep(5)
 
-def hyb_clean_callback(pump):
-    global on_off
-    on_off = 3
-    gsioc.GSIOC.stop(pump)
-    print('Hybridization line clean Done' + datetime("now"))
-
-def lig_clean_callback(pump):
-    global on_off
-    on_off = 3
-    gsioc.GSIOC.stop(pump)
-    print('Ligation line clean Done' + datetime("now"))
-
-def hyb_lig_clean(mvp1, pump, user_data):
+def hyb_lig_clean(mvp1, pump, user_data): # DO THE FOLLWING 3 FUNCTIONS NEED TO BE CALLED AND WHEN AND AT WHAT SPEED
     cycle_id = "Hybridization"
     if user_data["skip_stages"][cycle_id] == 1:
         print(cycle_id + " was skipped")
         return
     on_off = 1
-    for angle in range(90, 135): 
+    """ for angle in range(90, 135): 
         angle = angle + 45
         move_servo(angle)
         time.sleep(2)
-
-    mvp.change_valve_pos(mvp1, position(2))
+ """
+    move_servo(90)
+    mvp.change_valve_pos(mvp1,0, position(2))
     time.sleep(10)
 
-    timer = Timer(167, hyb_clean_callback)
-    print('Hybridization line clean start' + datetime("now"))
+    duration_seconds = 15
+    
+    start_time = time.time()
 
-    timer.start()
+    gsioc.GSIOC.push(pump, user_data["speeds"][cycle_id])
 
-    while on_off == 1:
-        gsioc.GSIOC.push(pump, user_data["speeds"][cycle_id])
+    print('Hybridization line clean start' + str(datetime.datetime.now()))
 
-    time.sleep(45)
+    while True:
 
-    mvp.change_valve_pos(mvp1, position(4))
+        elapsed_time = time.time() - start_time
+
+        if elapsed_time >= duration_seconds:
+            break  # Exit the loop when the desired duration is reached
+
+    pump.stop()
+    print('Hybridization line clean stopped' + str(datetime.datetime.now()))
+    time.sleep(5)
+
+    mvp.change_valve_pos(mvp1,0, position(4))
     time.sleep(10)
 
-    timer2 = Timer(167, lig_clean_callback)
-    print('Ligation line clean start' + datetime("now"))
+    start_time = time.time()
 
-    timer2.start()
+    gsioc.GSIOC.push(pump, user_data["speeds"][cycle_id])
 
+    print('Ligation line clean start' + str(datetime.datetime.now()))
 
-    while on_off == 1:
-        gsioc.GSIOC.push(pump, user_data["speeds"][cycle_id])
+    while True:
 
+        elapsed_time = time.time() - start_time
+
+        if elapsed_time >= duration_seconds:
+            break  # Exit the loop when the desired duration is reached
+
+    pump.stop()
+    print('Ligation line clean stopped' + str(datetime.datetime.now()))
     time.sleep(45)
-
-def hyb_rinse_callback(pump):
-    global on_off
-    on_off = 3
-    gsioc.GSIOC.stop(pump)
-    print('Hybridization line rinse Done' + datetime("now"))
-
-def hyb_lig_rinse_callback(pump):
-    global on_off
-    on_off = 3
-    gsioc.GSIOC.stop(pump)
-    print('Ligation line rinse Done' + datetime("now"))
 
 def hyb_lig_rinse(mvp1, pump, user_data):
     cycle_id = "Hybridization"
     if user_data["skip_stages"][cycle_id] == 1:
-        #print(cycle_id + " was skipped")
+        print(cycle_id + " was skipped")
         return
-    move_servo(135)
+
+    move_servo(90)
     time.sleep(2)
 
     mvp.change_valve_pos(mvp1, 0, position(2))
-    on_off = 1
-    angles = [90, 135]
-
-    mvp.change_valve_pos(mvp1, 0, position(2))
     time.sleep(10)
+    duration_seconds = 15
+    
+    start_time = time.time()
 
-    timer = Timer(167, hyb_rinse_callback)
+    pump.push(user_data["speeds"][cycle_id])
 
-    timer.start()
+    print('Hybridization line rinse start ' + str(datetime.datetime.now()))
 
-    gsioc.GSIOC.push(pump, user_data["speeds"][cycle_id])
+    while True:
 
+        elapsed_time = time.time() - start_time
 
-    while on_off == 1:
-        print("Rinsing")
-
-    time.sleep(45)
+        if elapsed_time >= duration_seconds:
+            break  # Exit the loop when the desired duration is reached
+    print('Hybridization line rinse completed ' + str(datetime.datetime.now()))       
+    pump.stop()
 
 
     mvp.change_valve_pos(mvp1, 0, position(4))
     time.sleep(10)
-    on_off = 1
 
-    timer2 = Timer(167, hyb_rinse_callback)
+    start_time = time.time()
 
-    timer2.start()
+    pump.push(user_data["speeds"][cycle_id])
 
-    gsioc.GSIOC.push(pump, user_data["speeds"][cycle_id])
+    print('Ligation line rinse start ' + str(datetime.datetime.now()))
 
+    while True:
 
-    while on_off == 1:
-        print("Rinsing")
+        elapsed_time = time.time() - start_time
+
+        if elapsed_time >= duration_seconds:
+            break  # Exit the loop when the desired duration is reached
+    print('Ligation line rinse completed ' + str(datetime.datetime.now()))
+    pump.stop()
         
-    time.sleep(45)
-
-def hyb_lig_clear_callback(pump):
-    global on_off
-    on_off = 3
-    gsioc.GSIOC.stop(pump)
+    time.sleep(5)
 
 def hyb_lig_clear(mvp1, pump, user_data):
     cycle_id = "Hybridization"
     if user_data["skip_stages"][cycle_id] == 1:
-        #print(cycle_id + " was skipped")
+        print(cycle_id + " was skipped")
         return
-    for angle in range(135, 45):
-        angle = angle + 18
-        move_servo(angle)
 
     mvp.change_valve_pos(mvp1, 0, position(2))
     time.sleep(2)
 
-    on_off = 1
-    angles = [90, 135]
+    duration_seconds = 15
+    
+    start_time = time.time()
+    print('Hybridization line clear start ' + str(datetime.datetime.now()))
+    pump.push(user_data["speeds"][cycle_id])  
 
-    timer = Timer(190, hyb_lig_clear_callback, args = ('Hybridization line clear Done' + datetime("now")))
+    while True:
 
-    timer.start()
+        elapsed_time = time.time() - start_time
 
-    gsioc.GSIOC.push(pump, user_data["speeds"][cycle_id])
+        if elapsed_time >= duration_seconds:
+            break  # Exit the loop when the desired duration is reached
+    print('Hybridization line clear completed ' + str(datetime.datetime.now()))
+    pump.stop()    
 
-
-    while on_off == 1:
-        print("Clearing")
-
-    time.sleep(45)
+    time.sleep(5)
 
 
     mvp.change_valve_pos(mvp1, 0, position(4))
     time.sleep(10)
-    on_off = 1
 
-    timer2 = Timer(190, hyb_lig_rinse_callback, args = ('Ligation line clear Done' + datetime("now")))
+    start_time = time.time()
 
-    timer2.start()
+    pump.push(user_data["speeds"][cycle_id])
 
-    gsioc.GSIOC.push(pump, user_data["speeds"][cycle_id])
+    print('Ligation line clear start ' + str(datetime.datetime.now()))
 
+    while True:
 
-    while on_off == 1:
-        print("Clearing")
+        elapsed_time = time.time() - start_time
+
+        if elapsed_time >= duration_seconds:
+            break  # Exit the loop when the desired duration is reached
+    print('Ligation line clear completed ' + str(datetime.datetime.now()))
+    pump.stop()  
         
-    time.sleep(45)
-
-def lig_callback(pump): #***
-    global on_off
-    on_off = 3
-    gsioc.GSIOC.stop(pump)
+    time.sleep(5)
 
 def lig(mvp1, pump, user_data):#*** what are these two functions for ?
-    for angle in range(45, 135):
-        angle = angle + 18
-        move_servo(angle)
-    mvp.change_valve_pos(mvp1, 0, 3)
-    time.sleep(2)
+ 
+    cycle_id = "Ligation Buffer"
+    if user_data["skip_stages"][cycle_id] == 1:
+        print(cycle_id + " was skipped")
+        return
 
-    on_off = 1
-    timer = Timer(200, lig_callback, args = ('Ligation buffer done' + datetime("now")))
+    mvp.change_valve_pos(mvp1, 0, position(3))
+    time.sleep(2) 
 
-
-    timer.start()
-
-    gsioc.GSIOC.push(pump, 300)
-
-    while on_off == 1:
-        print("ligation buffer going")
+    duration_seconds = 15
     
-    time.sleep(45)
+    start_time = time.time()
 
-    time.sleep(900)
+    pump.push(user_data["speeds"][cycle_id])
 
-def img_callback(mvp1, pump):
-    global on_off
-    on_off = 3
-    gsioc.GSIOC.stop(pump)
+    print('Ligation solution input start ' + str(datetime.datetime.now()))
+
+    while True:
+
+        elapsed_time = time.time() - start_time
+
+        if elapsed_time >= duration_seconds:
+            break  # Exit the loop when the desired duration is reached
+    print('Ligation solution input completed ' + str(datetime.datetime.now()))
+    pump.stop()   
+    
+    time.sleep(5)
+
+    # time.sleep(900)
     
 def img(mvp1, pump, user_data):
     cycle_id = "Imaging Buffer"
     if user_data["skip_stages"][cycle_id] == 1:
         print(cycle_id + " was skipped")
         return
-    on_off = 1
-
-    for angle in range(45, 135):
-        angle = angle + 18
-        move_servo(angle)
-        time.sleep(2)
+    
 
     mvp.change_valve_pos(mvp1, 0, position(6))
     time.sleep(2)
 
-    timer = Timer(240, lig_callback, args = ('Imaging Buffer Priming Done' + datetime("now")))
+    duration_seconds = 15
+    
+    start_time = time.time()
 
-    gsioc.GSIOC.push(pump, user_data["speeds"][cycle_id])
+    pump.push(user_data["speeds"][cycle_id])
 
-    timer.start()
+    print('Imaging buffer timing start ' + str(datetime.datetime.now()))
 
-    while on_off ==1:
-        print("imaging buffer setting up")
+    while True:
 
-def img8hr_callback(pump):
-    global on_off
-    on_off = 3
-    gsioc.GSIOC.stop(pump)
-    print('Imaging Done' + datetime("now"))
+        elapsed_time = time.time() - start_time
 
-def img8hr(mvp1,pump):
+        if elapsed_time >= duration_seconds:
+            break  # Exit the loop when the desired duration is reached
+    print('Imaging buffer timing completed ' + str(datetime.datetime.now()))
+    pump.stop()   
+
+def img8hr(mvp1,pump,user_data):
     cycle_id = "Imaging Buffer"
     if user_data["skip_stages"][cycle_id] == 1:
-        #print(cycle_id + " was skipped")
+        print(cycle_id + " was skipped") #COME BACK TO THIS MAYBE CREATE A NEW FLOW RATE 
         return
-    on_off = 1
 
     mvp.change_valve_pos(mvp1, 0, position(6))
 
-    timer = Timer(14400, lig_callback)
-    print("Imaging starting"+ datetime.datetime.now)
+    print("Imaging starting "+ str(datetime.datetime.now))
 
-    gsioc.GSIOC.push(pump, user_data["speeds"][cycle_id])
+    duration_seconds = 15
+    
+    start_time = time.time()
 
-    timer.start()
+    pump.push(user_data["speeds"][cycle_id])
 
-    while on_off ==1:
-        pass
+
+    while True:
+
+        elapsed_time = time.time() - start_time
+
+        if elapsed_time >= duration_seconds:
+            break  # Exit the loop when the desired duration is reached
+    print("Imaging completed "+ str(datetime.datetime.now))
+    pump.stop()   
 
 ## ADDITION BY BEN:
-def timer_callback_pbst_short(pump):
-    global on_off
-    on_off = 3
-    gsioc.GSIOC.stop(pump)
-    print("Wash Done " + str(datetime.datetime.now()))
 
 def pbst_short(mvp1, pump, user_data):
-    cycle_id = "PBST-Short"
+    cycle_id = "PBST Short"
     if user_data["skip_stages"][cycle_id] == 1:
         print(cycle_id + " was skipped")
         return
-    global on_off
+    
     
     # Set servo angle
     """ In the Boyden Lab code they had a loop to set the angle and here I just set it
     - this is basically a note for debugging (refer to; https://github.com/molonc/exseq/blob/main/Boyden%20Lab%20Code/S05_PBST_short.m )"""
-    move_servo(0.75*180)
-    
     # Set valve and pump for PBST washing
     mvp.change_valve_pos(mvp1, 0, position(6))  # Replace with the appropriate valve position
     print("Wash Start " + str(datetime.datetime.now()))
     
     # Set up timer for 10 minutes (600 seconds)
-    timer = Timer(600, timer_callback_pbst_short, args=(pump,))
-    timer.start()
-    
-    on_off = 1
+    duration_seconds = 15
+    start_time = time.time()
+    print("waiting for PBST solution to fill up " + str(datetime.datetime.now()))
     gsioc.GSIOC.push(pump, user_data["speeds"][cycle_id]) # Adjust as needed
-    
-    while on_off == 1:
+    while True:
+        elapsed_time = time.time() - start_time
+        if elapsed_time >= duration_seconds:
+            break
+
+    pump.stop()
+    print("PBST solution has filled up " + str(datetime.datetime.now()))        
+
+
+    duration_seconds = 15
+    start_time = time.time()
+    while True:
         # Implement servo angle changes for shaking here
         for angle in range(60*180, 35*180, -5*180):
             move_servo(angle/100)
@@ -473,53 +497,37 @@ def pbst_short(mvp1, pump, user_data):
             time.sleep(2)
         
         time.sleep(5)
+        elapsed_time = time.time() - start_time
+        if elapsed_time >= duration_seconds:
+            break        
     
-    time.sleep(45)       
+    time.sleep(5)       
     
-def timer_callback_PBS_10_callback(pump):
-    global on_off
-    on_off = 3
-    gsioc.GSIOC.stop(pump)
-    print("PBS_10 Rinse Complete" + str(datetime.datetime.now()))    
-
-
 def PBS_10(mvp1,pump, user_data):
     cycle_id = "PBS"
     if user_data["skip_stages"][cycle_id] == 1:
         print(cycle_id + " was skipped")
         return
-    """I think this implementation of directly changing the angle should work"""
-    #setting angle 
-    on_off = 1
-
-    for angle in range(135, 45):
-        angle = angle - 18
-        move_servo(angle)
-        time.sleep(2)
-    
     #Setting the Valve and Pump for PBS RINSE
     mvp.change_valve_pos(mvp1, 0 , position(1)) #change to the appropriate valve postion
     time.sleep(10)# pause for 10 to calibrate 
         
-    #Set timer for 435 seconds
-    timer = Timer(435, timer_callback_PBS_10_callback)
-    print("PBS_10 Rinse Start"+ str(datetime.datetime.now()))
-
-
+    
+    
+    print("PBS_10 Rinse Start "+ str(datetime.datetime.now()))
     gsioc.GSIOC.push(pump, user_data["speeds"][cycle_id]) #change as needed 
-
-    timer.start()
-    
-    while on_off == 1:
-        pass
-    
-    time.sleep(45)
-
-def timer_callback_Hybridization_callback(pump):
-    global on_off
-    on_off = 3
-    gsioc.GSIOC.stop(pump)
-    print("Hybridization Set " + str(datetime.datetime.now()))
+   
+    #Set timer for 435 seconds
+    duration_seconds = 15
+    start_time = time.time()
+    gsioc.GSIOC.push(pump, user_data["speeds"][cycle_id]) # Adjust as needed
+    while True:
+        elapsed_time = time.time() - start_time
+        if elapsed_time >= duration_seconds:
+            break   
+    print("PBS_10 Rinse Completed "+ str(datetime.datetime.now()))
+    pump.stop()
+    time.sleep(5)
     
 def hybridization(mvp1, pump, user_data):
     #Reference: https://github.com/molonc/exseq/blob/main/Boyden%20Lab%20Code/S08_Hybridization.m
@@ -528,73 +536,46 @@ def hybridization(mvp1, pump, user_data):
         print(cycle_id + " was skipped")
         return
     
-    for angle in range(.25*180,.75*180,.1*180):
-        move_servo(angle)
-        time.sleep(2)
-    # Valve and Pump Stuff 
     mvp.change_valve_pos(mvp1,0,position(2)) #change witht the correct valves
     time.sleep(10)
 
-    print("Hybridization initiated " + str(datetime.datetime.now()))
-    
-    # set timer for 3 minutes 
-    timer = Timer(177, timer_callback_Hybridization_callback, args = (pump,))
-    
-    on_off = 1
     gsioc.GSIOC.push(pump, user_data["speeds"][cycle_id]) #change as needed
-    timer.start()
-
-    while on_off == 1:
-        pass
-    
-    gsioc.GSIOC.stop(pump) #not sure this is neccessary but the matlab stopped the pump with their timer and at the end of their program 
-    
-    time.sleep(2700)
-
-def timer_callback_ligation_callback(pump):
-    global on_off
-    on_off = 3
-    gsioc.GSIOC.stop(pump)
-    print("Ligation Buffer Completed " + str(datetime.datetime.now()))
+    # set timer for 3 minutes  
+    duration_seconds = 15
+    start_time = time.time()
+    print("Hybridization initiated " + str(datetime.datetime.now()))    
+    gsioc.GSIOC.push(pump, user_data["speeds"][cycle_id]) # Adjust as needed
+    while True:
+        elapsed_time = time.time() - start_time
+        if elapsed_time >= duration_seconds:
+            break
+    pump.stop()
+    print("Hybridization Completed " + str(datetime.datetime.now()))
+         
+    time.sleep(5)
     
 def ligation_buffer(mvp1,pump, user_data): 
     cycle_id = "Ligation Buffer"
     if user_data["skip_stages"][cycle_id] == 1:
         print(cycle_id + " was skipped")
         return
-    #setting the angle 
-    for angle in range(.25*180,.75*180,.1*180):
-        move_servo(angle)
-        time.sleep(2)
     
     #valve and pump 
     mvp.change_valve_pos(mvp1,0,position(3))
     time.sleep(10)
 
     print("Ligation Buffer Started " + str(datetime.datetime.now()))
-    timer = Timer(200, timer_callback_ligation_callback)
     
-    on_off = 1
+    duration_seconds =15
+    start_time = time.time()
     gsioc.GSIOC.push(pump, user_data["speeds"][cycle_id])
-
-    timer.start()
-    
-    while on_off == 1:
-        pass
-
-    time.sleep(500)
-    
-def timer_callback_angle_change(pump):
-    global angle
-    angle = 0.75
-    move_servo(0.75)
-    print("Angle change " + str(datetime.datetime.now()))
-    
-def timer_callback_ligation_start(pump):
-    global on_off
-    on_off = 3
-    gsioc.GSIOC.stop(pump)
-    print("Ligation Completed " + str(datetime.datetime.now()))
+    while True:
+        elapsed_time = time.time() - start_time
+        if elapsed_time >= duration_seconds:
+            break
+    pump.stop()
+    print("Ligation Buffer Completed " + str(datetime.datetime.now()))
+    time.sleep(5)
     
 def ligation_solution(mvp1,pump, user_data):
     """The code for this lab from boyden lab says incomplete,
@@ -605,40 +586,25 @@ def ligation_solution(mvp1,pump, user_data):
     if user_data["skip_stages"][cycle_id] == 1:
         print(cycle_id + " was skipped")
         return
-    
-    # Set servo angle to 0.25 (stay at one angle for ligation)
-    angle = 0.25
-    move_servo(angle*180)
+
+    move_servo(90)
     
     time.sleep(2)  # Pause for calibration
     # Set valve and pump for ligation solution
     mvp.change_valve_pos(mvp1, 0, position(4))  # Replace with the appropriate valve position
     time.sleep(10)  # Pause for calibration
-    
-    # Set up the speed and timer for about 1 minute to change angle
-    
-    angle_change_timer = Timer(90, timer_callback_angle_change)
-
-    print("Ligation Solution Input Start " + str(datetime.datetime.now()))
-
-    angle_change_timer.start()
-
     # Wait for the angle change timer to complete
-
     gsioc.GSIOC.push(pump, user_data["speeds"][cycle_id]) # change as needed 
-
-    while angle == 0.25:
-        pass
-
-      # Start the ligation timer 
-    timer = Timer(100, timer_callback_ligation_start)
-    timer.start()
-    
-# Wait for the ligation process to complete
-    while on_off == 1:
-        pass
-
-    time.sleep(45)
+    duration_seconds = 15
+    start_time = time.time()
+    print("Ligation Solution Input Start " + str(datetime.datetime.now()))
+    while True:
+        elapsed_time = time.time() - start_time
+        if elapsed_time >= duration_seconds:
+            break
+    pump.stop()
+    print("Ligation Solution Input Completed "+ str(datetime.datetime.now()))
+    time.sleep(5)
 
 def position(idx): 
     if(idx>8 or idx<1):
@@ -677,7 +643,12 @@ def tester_function(mvp1,pump):
 
 def fluidics_test(mvp1,pump,user_data,t_between):
     #testing each cycle 
-    print("testing the Fluidics Rounds: ")
+    print("Testing the Fluidics Rounds: ")
+    hyb_lig_clean(mvp1,pump,user_data)
+    time.sleep(t_between)
+    hyb_lig_rinse(mvp1,pump,user_data)
+    time.sleep(t_between)
+    hyb_lig_clear(mvp1,pump,user_data)
     time.sleep(t_between)
     stripping(mvp1,pump,user_data)
     time.sleep(t_between)
@@ -698,6 +669,8 @@ def fluidics_test(mvp1,pump,user_data,t_between):
     pbst_longwash(mvp1,pump,user_data)
     time.sleep(t_between)
     img(mvp1,pump,user_data)
+    time.sleep(t_between)
+    img8hr(mvp1,pump,user_data)
 
 if __name__ == "__main__":
     # set all the variables
@@ -707,14 +680,14 @@ if __name__ == "__main__":
     mvp1 = mvp.MVP()
     mvp1.connect(mvp1_COM)
     #mvp2 = mvp.MVP()
-    # user_data = GUI.initiate_fluidics_gui()
+    user_data = GUI.initiate_fluidics_gui()
     # stripping_solution_speed = user_data["speeds"]["Stripping Solution"]
     # print(f"Stripping Solution Speed: {stripping_solution_speed} mL/s")
     # if user_data["skip_stages"]['Stripping Solution']== 1:
     #     print("Stage was skipped")
         
     #This Code Tests the system
-    # t_between = user_data["time_between_stages"]
+    t_between = user_data["time_between_stages"]
     
     
     # connect the pump
@@ -724,5 +697,11 @@ if __name__ == "__main__":
     # time.sleep(10) #pump for 10 s
     # #pump.draw(14) CCW direction
     # pump.stop()
-    tester_function(mvp1,pump)
+    # fluidics_test(mvp1,pump,user_data,t_between)
+    # hyb_lig_clean(mvp1,pump,user_data)
+    # hyb_lig_rinse(mvp1,pump,user_data)
+    # hyb_lig_clear(mvp1,pump,user_data)
+    ser.close()
+
+
 
