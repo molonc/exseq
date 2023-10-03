@@ -19,9 +19,18 @@ void loop() {
       int spaceIndex = command.indexOf(' ');
       if (spaceIndex != -1) {
         int targetPosition = command.substring(5).toInt();
-        pos = targetPosition; // Set the initial position
-        myservo.write(pos); // Move to the initial position
+        while(myservo.read() != targetPosition ){
+          pos = myservo.read(); // Set the initial position
+          if(pos > targetPosition){
+            myservo.write(pos - 1);
+          }else{
+            myservo.write(pos + 1);
+          }
+          delay(.075);//waiting to go back into the loop 
+           // Move to the initial position
       }
+    }
+
     } else if (command.startsWith("SET_DURATION")) {
       // Parse the command to set the duration
       int spaceIndex = command.indexOf(' ');
@@ -37,5 +46,13 @@ void loop() {
       durationMillis = 0; // Reset the duration
       // You can take additional actions here if needed
   }
+  // THE FOLLOWING CODE IS TO SEND THE ANGLE ACROSS THE SERIAL COMMUNICATION
+    """int current_angle = myservo.read()
+      Serial.println(current_angle)"""
+  // THE FOLLOWING CODE IS TO RECIEVE THE COMMANDS IN PYTHON
+  """def current_angle():
+    current_angle = int(ser.readline().strip().decode("utf-8"))
+    return current_angle
+    """
   
 }
