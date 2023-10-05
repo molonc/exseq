@@ -29,6 +29,7 @@ com_port = 'COM5'
 
 # Initialize the serial connection
 ser = serial.Serial(com_port, baudrate=9600)
+
 def set_flowrate(flowrate):
     return round(flowrate*68.571)
 
