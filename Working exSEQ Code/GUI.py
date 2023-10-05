@@ -7,14 +7,14 @@ def initiate_fluidics_gui():
 
     # Initialize variables
     speeds = {
-        "Stripping Solution": 0,
-        "PBST Short": 0,
-        "PBS": 0,
-        "Hybridization": 0,
-        "Ligation Buffer": 0,
-        "Ligation Solution": 0,
-        "PBST Long": 0,
-        "Imaging Buffer": 0,
+        "Stripping Solution": 0.0,
+        "PBST Short": 0.0,
+        "PBS": 0.0,
+        "Hybridization": 0.0,
+        "Ligation Buffer": 0.0,
+        "Ligation Solution": 0.0,
+        "PBST Long": 0.0,
+        "Imaging Buffer": 0.0,
     }
 
     time_between_stages = tk.StringVar()
@@ -23,7 +23,7 @@ def initiate_fluidics_gui():
 
     def start_fluidics():
         user_input = {
-            "speeds": {stage: int(speed_vars[stage].get()) * 100 if speed_vars[stage].get() else 0 for stage in speeds},
+            "speeds": {stage: float(speed_vars[stage].get()) * 100 if speed_vars[stage].get() else 0 for stage in speeds},
             "time_between_stages": int(time_between_stages.get()),
             "shaker_duration": int(shaker_duration.get()),
             "skip_stages": {stage: skip_stages[stage].get() for stage in speeds}
@@ -63,7 +63,7 @@ def initiate_fluidics_gui():
     root.mainloop()
 
     return {
-        "speeds": {stage: int(speed_vars[stage].get()) * 100 if speed_vars[stage].get() else 0 for stage in speeds},  # Multiply by 100 here
+        "speeds": {stage: float(speed_vars[stage].get()) * 100 if speed_vars[stage].get() else 0 for stage in speeds},  # Multiply by 100 here
         "time_between_stages": int(time_between_stages.get()),
         "shaker_duration": int(shaker_duration.get()),
         "skip_stages": {stage: skip_stages[stage].get() for stage in speeds}
