@@ -87,7 +87,7 @@ def stripping(mvp1, pump, user_data):
         return
     #current_angle = ser.read()
     #on_off = 1
-    move_servo(90)
+    move_servo(45)
     # starting loop to make angle reach 135 degrees
     # The code section below is commented out to as we do not
     # need to adjust the angle of the coverslip to push fluid to it
@@ -151,7 +151,7 @@ def pbst_longwash(mvp1, pump, user_data):
     
 
     #Moving servo to initial angle of 130
-    move_servo(90)
+    move_servo(45)
     time.sleep(2)
 
 
@@ -213,7 +213,7 @@ def PBS_6(mvp1, pump, user_data):
         return    
     #current_angle = ser.read()
     #on_off = 1
-
+    move_servo(45)
     # initializing angle of the shaker
     """ while current_angle > 45:
         for current_angle in range (current_angle, 45):
@@ -252,7 +252,7 @@ def hyb_lig_clean(mvp1, pump, user_data): # DO THE FOLLWING 3 FUNCTIONS NEED TO 
         move_servo(angle)
         time.sleep(2)
  """
-    move_servo(90)
+    move_servo(45)
     mvp.change_valve_pos(mvp1,0, 2)
     time.sleep(10)
 
@@ -301,7 +301,7 @@ def hyb_lig_rinse(mvp1, pump, user_data):
         print(cycle_id + " was skipped")
         return
 
-    move_servo(90)
+    move_servo(45)
     time.sleep(2)
 
     mvp.change_valve_pos(mvp1, 0, 2)
@@ -352,7 +352,7 @@ def hyb_lig_clear(mvp1, pump, user_data):
 
     mvp.change_valve_pos(mvp1, 0, 2)
     time.sleep(2)
-
+    move_servo(45)
     duration_seconds = 15
     
     start_time = time.time()
@@ -402,7 +402,7 @@ def lig(mvp1, pump, user_data):#*** what are these two functions for ?
     time.sleep(2) 
 
     duration_seconds = 15
-    
+    move_servo(45)
     start_time = time.time()
 
     pump.push(set_flowrate(user_data["speeds"][cycle_id]))
@@ -427,7 +427,7 @@ def img(mvp1, pump, user_data):
     if user_data["skip_stages"][cycle_id] == 1:
         print(cycle_id + " was skipped")
         return
-    
+    move_servo(45)
 
     mvp.change_valve_pos(mvp1, 0, 6)
     time.sleep(2)
@@ -456,7 +456,7 @@ def img8hr(mvp1,pump,user_data):
         return
 
     mvp.change_valve_pos(mvp1, 0, 6)
-
+    move_servo(45)
     print("Imaging starting "+ str(datetime.datetime.now))
 
     duration_seconds = 15
@@ -482,7 +482,7 @@ def pbst_short(mvp1, pump, user_data):
     if user_data["skip_stages"][cycle_id] == 1:
         print(cycle_id + " was skipped")
         return
-    
+    move_servo(45)
     
     # Set servo angle
     """ In the Boyden Lab code they had a loop to set the angle and here I just set it
@@ -534,7 +534,7 @@ def PBS_10(mvp1,pump, user_data):
     #Setting the Valve and Pump for PBS RINSE
     mvp.change_valve_pos(mvp1, 0 , 1) #change to the appropriate valve postion
     time.sleep(10)# pause for 10 to calibrate 
-        
+    move_servo(45)   
     
     
     print("PBS_10 Rinse Start "+ str(datetime.datetime.now()))
@@ -558,7 +558,7 @@ def hybridization(mvp1, pump, user_data):
     if user_data["skip_stages"][cycle_id] == 1:
         print(cycle_id + " was skipped")
         return
-    
+    move_servo(45)
     mvp.change_valve_pos(mvp1,0,2) #change witht the correct valves
     time.sleep(10)
 
@@ -582,7 +582,7 @@ def ligation_buffer(mvp1,pump, user_data):
     if user_data["skip_stages"][cycle_id] == 1:
         print(cycle_id + " was skipped")
         return
-    
+    move_servo(45)
     #valve and pump 
     mvp.change_valve_pos(mvp1,0,3)
     time.sleep(10)
@@ -610,7 +610,7 @@ def ligation_solution(mvp1,pump, user_data):
         print(cycle_id + " was skipped")
         return
 
-    move_servo(90)
+    move_servo(45)
     
     time.sleep(2)  # Pause for calibration
     # Set valve and pump for ligation solution
