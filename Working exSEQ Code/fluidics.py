@@ -3,7 +3,7 @@ import mvp
 import gsioc
 import datetime
 import GUI
-from pyfirmata import Arduino, SERVO
+# from pyfirmata import Arduino, SERVO
 from threading import Timer
 import threading
 import serial
@@ -16,14 +16,6 @@ import serial
 #   - 6 PBST
 #   - 7 Stripping Solution
 
-# board = Arduino('/dev/tty.usbserial-14310')
-
-# servo_pin = 4
-
-# servo = board.get_pin(f's:{servo_pin}:s')
-
-
-
 # Define the COM port (change this to your specific COM port) using to connect the Arduino board
 com_port = 'COM5'
 
@@ -33,18 +25,33 @@ ser = serial.Serial(com_port, baudrate=9600)
 def set_flowrate(flowrate):
     return round(flowrate*68.571)
 
+def flowrate(cycle_id, user_data):
+    max_flowrate = { #fill this out by running the specific fluid for 60 seconds and see how much volume left syringe 
+        "Stripping Solution": 0.0,
+        "PBST Short": 0.0,
+        "PBS": 0.0,
+        "Hybridization": 0.0,
+        "Ligation Buffer": 0.0,
+        "Ligation Solution": 0.0,
+        "PBST Long": 0.0,
+        "Imaging Buffer": 0.0
+    }
+    return (user_data["Speeds"][cycle_id])*(48/max_flowrate[cycle_id])
+    
+
+
 def time_remaining(user_data):
     skip_stages = user_data.get("skip_stages",{})
     total_remaining_time = 0
     stage_durations = {
-        "Stripping Solution": 3600,
-        "PBST Short": 1600,
-        "PBS": 120,
-        "Hybridization": 400,
-        "Ligation Buffer": 500,
-        "Ligation Solution": 600,
-        "PBST Long": 500,
-        "Imaging Buffer": 400,
+        "Stripping Solution": 1,
+        "PBST Short": 1,
+        "PBS": 1,
+        "Hybridization": 1,
+        "Ligation Buffer": 1,
+        "Ligation Solution": 1,
+        "PBST Long": 1,
+        "Imaging Buffer": 1,
     }
     for cycle_name, skip_status in skip_stages.items():
         if skip_status == 0:
@@ -53,11 +60,15 @@ def time_remaining(user_data):
     current_time = datetime.datetime.now()
     return current_time + datetime.timedelta(seconds = total_remaining_time)
 
+def read():
+    ser.write(b'READ\n') # Send 'READ' command to request the angle
+    current_angle = ser.readline().decode().strip() #reading the incoming message from the arduino 
+    return int(current_angle)
+
 def set_servo_duration(duration_seconds):
     try:
         # Initialize the serial connection
-        # Send the duration command to the Arduino
-        print(duration_seconds)
+        # Send the duration command to the Arduino        
         command = f"SET_DURATION {duration_seconds}\n"
         ser.write(command.encode())
     except serial.SerialException as e:
@@ -74,7 +85,11 @@ def move_servo(angle):
         # Send the angle command to the Arduino
         command = f"MOVE {angle}\n"
         ser.write(command.encode())
-        print(angle)
+        """this code waits until "True" is recieved from the arduino code"""
+        while True:
+            completion_message = (ser.readline().decode().strip())
+            if(completion_message):
+                break        
     except serial.SerialException as e:
         # Handle the connection error
         print(f"Serial connection error: {str(e)}")
@@ -87,24 +102,15 @@ def stripping(mvp1, pump, user_data):
     if user_data["skip_stages"][cycle_id] == 1:
         print(cycle_id + " was skipped")
         return
-    #current_angle = ser.read()
-    #on_off = 1
+  
     move_servo(45)
-    # starting loop to make angle reach 135 degrees
-    # The code section below is commented out to as we do not
-    # need to adjust the angle of the coverslip to push fluid to it
-    """ while current_angle < 135:
-        for current_angle in range (current_angle, 135):
-            current_angle = current_angle + 9
-            move_servo(current_angle)
-            time.sleep(2)
- """
+  
     # setting MVP to correct valve so we have access to stripping fluid
-    mvp.change_valve_pos(mvp1, 0, 8)
+    mvp.change_valve_pos(mvp1, 0, 7)
     time.sleep(10)
 
-# Specify the duration in seconds
-    duration_seconds = 60*(200/user_data["speeds"][cycle_id])  # Adjust this to the desired duration
+    # Specify the duration in seconds
+    duration_seconds = 60*(200/user_data["speeds"][cycle_id])  
 
     start_time = time.time()
 
@@ -127,8 +133,9 @@ def stripping(mvp1, pump, user_data):
     print("Starting to Shake "+ str(datetime.datetime.now()) )
     while True:
         move_servo(135)
-        time.sleep(5)
+        
         move_servo(45)
+        
     
         # Calculate the elapsed time
         elapsed_time = time.time() - start_time
@@ -150,9 +157,7 @@ def pbst_longwash(mvp1, pump, user_data):
 
     #Moving servo to initial angle of 130
     move_servo(45)
-    time.sleep(2)
-
-
+    
     # setting MVP to correct valve so we have access to PBST
     mvp.change_valve_pos(mvp1, 0, 6)
     time.sleep(10)
@@ -186,9 +191,8 @@ def pbst_longwash(mvp1, pump, user_data):
     print("Starting to Shake "+ str(datetime.datetime.now()) )
     while True:
         move_servo(135)
-        time.sleep(5)
-        move_servo(45)
-    
+        
+        move_servo(45)    
         # Calculate the elapsed time
         elapsed_time = time.time() - start_time
         
@@ -240,7 +244,6 @@ def hyb_lig_clean(mvp1, pump, user_data): # DO THE FOLLWING 3 FUNCTIONS NEED TO 
     if user_data["skip_stages"][cycle_id] == 1:
         print(cycle_id + " was skipped")
         return
-    on_off = 1
     """ for angle in range(90, 135): 
         angle = angle + 45
         move_servo(angle)
@@ -254,9 +257,9 @@ def hyb_lig_clean(mvp1, pump, user_data): # DO THE FOLLWING 3 FUNCTIONS NEED TO 
     
     start_time = time.time()
 
-    gsioc.GSIOC.push(pump, set_flowrate(user_data["speeds"][cycle_id]))
+    pump.push(set_flowrate(user_data["speeds"][cycle_id]))
 
-    print('Hybridization line clean start' + str(datetime.datetime.now()))
+    print('Hybridization line clean start ' + str(datetime.datetime.now()))
 
     while True:
 
@@ -266,17 +269,14 @@ def hyb_lig_clean(mvp1, pump, user_data): # DO THE FOLLWING 3 FUNCTIONS NEED TO 
             break  # Exit the loop when the desired duration is reached
 
     pump.stop()
-    print('Hybridization line clean stopped' + str(datetime.datetime.now()))
+    print('Hybridization line clean stopped ' + str(datetime.datetime.now()))
     time.sleep(5)
 
     mvp.change_valve_pos(mvp1,0, 4)
     time.sleep(10)
+    pump.push(set_flowrate(user_data["speeds"][cycle_id]))
 
-    start_time = time.time()
-
-    gsioc.GSIOC.push(pump, set_flowrate(user_data["speeds"][cycle_id]))
-
-    print('Ligation line clean start' + str(datetime.datetime.now()))
+    print('Ligation line clean start ' + str(datetime.datetime.now()))
 
     while True:
 
@@ -286,7 +286,7 @@ def hyb_lig_clean(mvp1, pump, user_data): # DO THE FOLLWING 3 FUNCTIONS NEED TO 
             break  # Exit the loop when the desired duration is reached
 
     pump.stop()
-    print('Ligation line clean stopped' + str(datetime.datetime.now()))
+    print('Ligation line clean stopped ' + str(datetime.datetime.now()))
     time.sleep(45)
 
 def hyb_lig_rinse(mvp1, pump, user_data):
@@ -411,9 +411,7 @@ def lig(mvp1, pump, user_data):#*** what are these two functions for ?
             break  # Exit the loop when the desired duration is reached
     print('Ligation solution input completed ' + str(datetime.datetime.now()))
     pump.stop()   
-    
     time.sleep(5)
-
     # time.sleep(900)
     
 def img(mvp1, pump, user_data):
@@ -477,10 +475,6 @@ def pbst_short(mvp1, pump, user_data):
         print(cycle_id + " was skipped")
         return
     move_servo(45)
-    
-    # Set servo angle
-    """ In the Boyden Lab code they had a loop to set the angle and here I just set it
-    - this is basically a note for debugging (refer to; https://github.com/molonc/exseq/blob/main/Boyden%20Lab%20Code/S05_PBST_short.m )"""
     # Set valve and pump for PBST washing
     mvp.change_valve_pos(mvp1, 0, 6)  # Replace with the appropriate valve position
     print("Wash Start " + str(datetime.datetime.now()))
@@ -489,13 +483,14 @@ def pbst_short(mvp1, pump, user_data):
     duration_seconds = 60*(200/user_data["speeds"][cycle_id])
     start_time = time.time()
     print("waiting for PBST solution to fill up " + str(datetime.datetime.now()))
-    gsioc.GSIOC.push(pump, set_flowrate(user_data["speeds"][cycle_id])) # Adjust as needed
+    pump.push(set_flowrate(user_data["speeds"][cycle_id])) # Adjust as needed
     while True:
         elapsed_time = time.time() - start_time
         if elapsed_time >= duration_seconds:
             break
 
     pump.stop()
+    
     print("PBST solution has filled up " + str(datetime.datetime.now()))        
 
 
@@ -504,15 +499,14 @@ def pbst_short(mvp1, pump, user_data):
     print("Shaking Started "+ str(datetime.datetime.now()) )
     while True:
         move_servo(135)
-        time.sleep(5)
+        
         move_servo(45)
-    
+        
         # Calculate the elapsed time
         elapsed_time = time.time() - start_time
         
         # Check if the desired duration has been reached
         if elapsed_time >= duration_seconds:
-            time.sleep(5)
             break  # Exit the loop when the desired duration is reached
     print("Shaking Completed "+ str(datetime.datetime.now()) )
     move_servo(90)
@@ -525,17 +519,18 @@ def PBS_10(mvp1,pump, user_data):
         return
     #Setting the Valve and Pump for PBS RINSE
     mvp.change_valve_pos(mvp1, 0 , 1) #change to the appropriate valve postion
+    move_servo(45)  
     time.sleep(10)# pause for 10 to calibrate 
-    move_servo(45)   
+     
     
     
     print("PBS_10 Rinse Start "+ str(datetime.datetime.now()))
-    gsioc.GSIOC.push(pump, set_flowrate(user_data["speeds"][cycle_id])) #change as needed 
+    pump.push(set_flowrate(user_data["speeds"][cycle_id])) #change as needed 
    
     #Set timer for 435 seconds
     duration_seconds = 60*(200/user_data["speeds"][cycle_id])
     start_time = time.time()
-    gsioc.GSIOC.push(pump, set_flowrate(user_data["speeds"][cycle_id])) # Adjust as needed
+    pump.push(set_flowrate(user_data["speeds"][cycle_id])) # Adjust as needed
     while True:
         elapsed_time = time.time() - start_time
         if elapsed_time >= duration_seconds:
@@ -554,12 +549,12 @@ def hybridization(mvp1, pump, user_data):
     mvp.change_valve_pos(mvp1,0,2) #change witht the correct valves
     time.sleep(10)
 
-    gsioc.GSIOC.push(pump, set_flowrate(user_data["speeds"][cycle_id])) #change as needed
+    
     # set timer for 3 minutes  
     duration_seconds = 60*(200/user_data["speeds"][cycle_id])
     start_time = time.time()
     print("Hybridization initiated " + str(datetime.datetime.now()))    
-    gsioc.GSIOC.push(pump, set_flowrate(user_data["speeds"][cycle_id])) # Adjust as needed
+    pump.push(set_flowrate(user_data["speeds"][cycle_id])) #change as needed
     while True:
         elapsed_time = time.time() - start_time
         if elapsed_time >= duration_seconds:
@@ -581,9 +576,9 @@ def ligation_buffer(mvp1,pump, user_data):
 
     print("Ligation Buffer Started " + str(datetime.datetime.now()))
     
-    duration_seconds =60*(200/user_data["speeds"][cycle_id])
+    duration_seconds = 60*(200/user_data["speeds"][cycle_id])
     start_time = time.time()
-    gsioc.GSIOC.push(pump, set_flowrate(user_data["speeds"][cycle_id]))
+    pump.push(set_flowrate(user_data["speeds"][cycle_id]))
     while True:
         elapsed_time = time.time() - start_time
         if elapsed_time >= duration_seconds:
@@ -604,12 +599,11 @@ def ligation_solution(mvp1,pump, user_data):
 
     move_servo(45)
     
-    time.sleep(2)  # Pause for calibration
     # Set valve and pump for ligation solution
     mvp.change_valve_pos(mvp1, 0, 4)  # Replace with the appropriate valve position
     time.sleep(10)  # Pause for calibration
     # Wait for the angle change timer to complete
-    gsioc.GSIOC.push(pump, set_flowrate(user_data["speeds"][cycle_id])) # change as needed 
+    pump.push(set_flowrate(user_data["speeds"][cycle_id])) # change as needed 
     duration_seconds = 60*(200/user_data["speeds"][cycle_id])
     start_time = time.time()
     print("Ligation Solution Input Start " + str(datetime.datetime.now()))
@@ -639,17 +633,46 @@ def tester_function(mvp1,pump):
     # time.sleep(2)
     # pump.stop()
     print("Testing all of it running at the same time")
-    pump.push(500)
-    for i in range(1, 9):
-        if i%2 == 0:
-            move_servo(.25*180)
-        else:
-            move_servo(.75*180)
-        mvp.change_valve_pos(mvp1,0,i)
-        print("The Valve is now at position: "+ str(i))
-        time.sleep(1)
+    move_servo(90)
+    time.sleep(4)
+    # for i in range(1, 9):
+    #     mvp.change_valve_pos(mvp1,0,i)
+    #     time.sleep(3)
+    #     pump.push(set_flowrate(.7*100))
+    #     time.sleep(172)
+    #     pump.stop()
+    #     time.sleep(2)
+    # pump.stop()
+    mvp.change_valve_pos(mvp1,0,2)
+    pump.push(set_flowrate(.7*100))
+    time.sleep(132)
     pump.stop()
 
+def shacker_test(pump, mvp1):
+    print("testing pump and Shacker timing")
+    print("Shaking Started "+ str(datetime.datetime.now()) + " shacker pause is: " + str(shacker_pause))
+    mvp.change_valve_pos(mvp1,0,7)
+    duration_seconds = 30
+    start_time = time.time()
+    while True:
+        move_servo(135)
+        
+        print(135==read())
+        move_servo(45)
+        
+        print(45 == read())
+        # Calculate the elapsed time
+        elapsed_time = time.time() - start_time
+        # Check if the desired duration has been reached
+        if elapsed_time >= duration_seconds:
+            break  # Exit the loop when the desired duration is reached
+    print("Shaking Completed and Pump Starting "+ str(datetime.datetime.now()))
+    pump.push(set_flowrate(.7*100))
+    time.sleep(10)
+    pump.stop()
+
+
+    
 def fluidics_test(mvp1,pump,user_data,t_between):
     #testing each cycle 
     print("Testing the Fluidics Rounds: ")
@@ -685,52 +708,31 @@ if __name__ == "__main__":
     # set all the variables
     gsioc_COM = "COM3" # important: choose correct communitcation port
     mvp1_COM = "COM4"
-    # #mvp2_COM = "COM13"
-    
-    #mvp2 = mvp.MVP()
-    # set_servo_duration(0.03)
-    # time.sleep(3)
-    # move_servo(45)
-    # time.sleep(5)
+           
     # stripping_solution_speed = user_data["speeds"]["Stripping Solution"]
     # print(f"Stripping Solution Speed: {stripping_solution_speed} mL/s")
     # if user_data["skip_stages"]['Stripping Solution']== 1:
     #     print("Stage was skipped")
     
-    
     """Code to test: """
-    user_data = GUI.initiate_fluidics_gui()    
+    user_data = GUI.initiate_fluidics_gui()
     # This Code Tests the system
     t_between = user_data["time_between_stages"]
     set_servo_duration(user_data["shaker_duration"])
+    global shaker_pause # This is how we know how long to wait for the servo to move to the desired angle
+    shacker_pause = user_data["shaker_duration"] # I did this to be lazy and not have to pass user_data into all the move_servo functions 
+    #Shaker pause is just the amount of time in the cpp 
+    
     # connect the pump
     mvp1 = mvp.MVP()
     mvp1.connect(mvp1_COM)
     pump = gsioc.GSIOC()
     pump.connect(gsioc_COM)
     fluidics_test(mvp1,pump,user_data,t_between)
+    # tester_function(mvp1, pump)
+    shacker_test(pump,mvp1)
     
-    # print("Testing at 0.6")
-    # pump.push(set_flowrate(.6*100))
-    # time.sleep(4)
-    # print("Testing at 0.35")
-    # pump.push(set_flowrate(.35*100))
-    # time.sleep(4)
-    # print("Testing at 0.22")
-    # pump.push(set_flowrate(.22*100))
-    # time.sleep(4)
-    # print("Testing at 0.13")
-    # pump.push(set_flowrate(.13*100))
-    # time.sleep(4)
-    # pump.stop()
-    # pump.push(500) # CW direction; 500 means 5 mL/min on display
-    # time.sleep(10) #pump for 10 s
-    # #pump.draw(14) CCW direction
-    # pump.stop()
     
-    # hyb_lig_clean(mvp1,pump,user_data)
-    # hyb_lig_rinse(mvp1,pump,user_data)
-    # hyb_lig_clear(mvp1,pump,user_data)
     ser.close()
 
 

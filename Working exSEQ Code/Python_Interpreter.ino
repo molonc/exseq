@@ -28,6 +28,7 @@ void loop() {
           }
           delay(durationMillis);
         }
+        Serial.println("True"); // once target angle is reached true is sent to the python code 
       }
     } else if (command.startsWith("SET_DURATION")) { 
       // Parse the command to set the duration
@@ -35,6 +36,10 @@ void loop() {
       if (spaceIndex != -1) {
         durationMillis = (unsigned long)(command.substring(spaceIndex + 1).toFloat() * 1000); // Convert seconds to milliseconds
       }
+    }else if(command.startsWith("READ")){
+      int current_angle = myservo.read();
+      Serial.println(String(current_angle));
     }
   }
+  
 }

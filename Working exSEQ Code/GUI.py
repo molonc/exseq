@@ -19,13 +19,14 @@ def initiate_fluidics_gui():
 
     time_between_stages = tk.StringVar()
     shaker_duration = tk.StringVar()
+    shaker_duration.set("0.075")
     skip_stages = {stage: tk.IntVar() for stage in speeds}
 
     def start_fluidics():
         user_input = {
             "speeds": {stage: float(speed_vars[stage].get()) * 100 if speed_vars[stage].get() else 0 for stage in speeds},
             "time_between_stages": int(time_between_stages.get()),
-            "shaker_duration": int(shaker_duration.get()),
+            "shaker_duration": float(shaker_duration.get()),
             "skip_stages": {stage: skip_stages[stage].get() for stage in speeds}
         }
         print("User Input:")
@@ -55,7 +56,7 @@ def initiate_fluidics_gui():
     ttk.Label(root, text="Time Between Stages (seconds):").pack()
     ttk.Entry(root, textvariable=time_between_stages).pack()
 
-    ttk.Label(root, text="Shaker Duration (seconds):").pack()
+    ttk.Label(root, text="Shaker Step Duration (seconds):").pack()
     ttk.Entry(root, textvariable=shaker_duration).pack()
 
     ttk.Button(root, text="Start Fluidics", command=start_fluidics).pack()
@@ -70,7 +71,7 @@ def initiate_fluidics_gui():
     }
     
     
-    """" THIS IS THE EXAMPLE CODE FOR HOW TO ACCESS THE DATA 
+    """ THIS IS THE EXAMPLE CODE FOR HOW TO ACCESS THE DATA 
 if __name__ == "__main__":
     user_data = initiate_fluidics_gui()
     print("Collected User Data:")
