@@ -66,7 +66,7 @@ def initiate_fluidics_gui():
     return {
         "speeds": {stage: float(speed_vars[stage].get()) * 100 if speed_vars[stage].get() else 0 for stage in speeds},  # Multiply by 100 here
         "time_between_stages": int(time_between_stages.get()),
-        "shaker_duration": int(shaker_duration.get()),
+        "shaker_duration": float(shaker_duration.get()),
         "skip_stages": {stage: skip_stages[stage].get() for stage in speeds}
     }
     
