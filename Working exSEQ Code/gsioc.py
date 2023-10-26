@@ -27,8 +27,8 @@ class GSIOC(SerialObject):
             self.set_speed(3600)
             print("Connected to minipuls_3")
         except Exception as e:
-            print(e)
-            print("Error Connecting to minipuls_3")
+            #  now our code throws an error instead of just printing one and continuing
+            raise ConnectionError(f"Error connecting to Minipuls 3: {e}")
 
     def _enable_external(self):
         self.buffered_command("SR")
@@ -45,27 +45,25 @@ class GSIOC(SerialObject):
             print("set speed")
             self.buffered_command("R%d" % speed)
         except Exception as e:
-            print(e)
-            print("Function is not enabled, please check pump connection..")
+            raise ConnectionError(f"Function is not enabled, please check pump connection: {e}")
+
 
     def stop(self):
         try:
             print("stop")
             self.buffered_command("KH")
         except Exception as e:
-            print(e)
-            print("Function is not enabled, please check pump connection..")
+            raise ConnectionError(f"Function is not enabled, please check pump connection: {e}")
 
     def push(self, speed):
         try:
             print("push")
             self._run(speed, 0) #CW direction - backwards
         except Exception as e:
-            print(e)
-            print("Function is not enabled, please check pump connection..")
+            raise ConnectionError(f"Function is not enabled, please check pump connection: {e}")
 
     def draw(self, speed):
         try:
             self._run(speed, 1) #CCW direction - forwards
-        except:
-            print("Function is not enabled, please check pump connection..")
+        except Exception as e:
+            raise ConnectionError(f"Function is not enabled, please check pump connection: {e}")

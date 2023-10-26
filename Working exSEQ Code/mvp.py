@@ -8,9 +8,11 @@ class MVP(SerialObject):
         super().__init__(serial)
 
     def connect(self, COM_port):
-        self.create_serial(COM_port, self.baudrate, 7, 5)
-        self.enable_external()
-
+        try:
+            self.create_serial(COM_port, self.baudrate, 7, 5)
+            self.enable_external()
+        except Exception as e:
+            raise ConnectionError(e)
     def initialize(self):
         self.command("aLXR")
         self.check_status()

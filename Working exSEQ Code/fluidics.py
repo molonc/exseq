@@ -17,10 +17,15 @@ import serial
 #   - 7 Stripping Solution
 
 # Define the COM port (change this to your specific COM port) using to connect the Arduino board
-com_port = 'COM5'
+# com_port = 'COM5'
 
 # Initialize the serial connection
-ser = serial.Serial(com_port, baudrate=9600)
+# ser = serial.Serial(com_port, baudrate=9600)
+
+
+#this is to make it so we dont need to change a bunch of code
+global ser
+global shaker_pause # This is how we know how long to wait for the servo to move to the desired angle
 
 def set_flowrate(flowrate):
     return round(flowrate*68.571)
@@ -717,17 +722,18 @@ if __name__ == "__main__":
     """Code to test: """
     user_data = GUI.initiate_fluidics_gui()
     # This Code Tests the system
+    mvp1 = user_data["mvp"]
+    pump = user_data["pump"]
+    ser = user_data["servo"]
+    
     t_between = user_data["time_between_stages"]
     set_servo_duration(user_data["shaker_duration"])
-    global shaker_pause # This is how we know how long to wait for the servo to move to the desired angle
+    
     shacker_pause = user_data["shaker_duration"] # I did this to be lazy and not have to pass user_data into all the move_servo functions 
     #Shaker pause is just the amount of time in the cpp 
     
     # connect the pump
-    mvp1 = mvp.MVP()
-    mvp1.connect(mvp1_COM)
-    pump = gsioc.GSIOC()
-    pump.connect(gsioc_COM)
+    
     fluidics_test(mvp1,pump,user_data,t_between)
     # tester_function(mvp1, pump)
     shacker_test(pump,mvp1)
