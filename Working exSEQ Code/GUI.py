@@ -11,7 +11,7 @@ class ExperimentalInfoDialog(simpledialog.Dialog):
         ttk.Label(master, text="Experimental Information").grid(row=0, column=0, columnspan=2, pady=10)
 
         # Creating entry boxes with labels
-        labels = ["Label 1:", "Label 2:", "Label 3:", "Label 4:", "Label 5:"]
+        labels = ["Sample ID:", "Xeno ID:", "Library", "Library Prep", "Digestion Buffer","Digestion Time","Date of Imaging","Readout Probes","Readout Probes Concentration","Lab Collector ID"]
         self.entries = []
 
         for i, label_text in enumerate(labels):
@@ -98,7 +98,7 @@ def initiate_fluidics_gui():
             except serial.SerialException as e:
                 print(f"Serial connection error: {e}")
 
-    # TODO: Make mvp throw an error when trying to connect
+    
     def control_valve_positioner():
         dialog = DropdownDialog(root, "Select COM Port")
         selected_port = dialog.result
