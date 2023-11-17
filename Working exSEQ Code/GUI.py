@@ -6,7 +6,24 @@ import serial
 from serial.tools import list_ports
 
 # this is so we can pass these back into our fluidics code 
+class ExperimentalInfoDialog(simpledialog.Dialog):
+    def body(self, master):
+        ttk.Label(master, text="Experimental Information").grid(row=0, column=0, columnspan=2, pady=10)
 
+        # Creating entry boxes with labels
+        labels = ["Label 1:", "Label 2:", "Label 3:", "Label 4:", "Label 5:"]
+        self.entries = []
+
+        for i, label_text in enumerate(labels):
+            ttk.Label(master, text=label_text).grid(row=i + 1, column=0, sticky='e', padx=5, pady=5)
+            entry = ttk.Entry(master)
+            entry.grid(row=i + 1, column=1, sticky='w', padx=5, pady=5)
+            self.entries.append(entry)
+
+        return self.entries[0]  # Focus on the first entry box
+
+    def apply(self):
+        self.result = [entry.get() for entry in self.entries]
 
 def list_available_com_ports():
     com_ports = [port.device for port in serial.tools.list_ports.comports()]
@@ -43,6 +60,7 @@ def initiate_fluidics_gui():
     shaker_duration = tk.StringVar()
     shaker_duration.set("0.075")
     skip_stages = {stage: tk.IntVar() for stage in speeds}
+    experimental_info_result = None
 
     def start_fluidics():
         user_input = {
@@ -62,6 +80,11 @@ def initiate_fluidics_gui():
             speed_entries[stage_name].config(state=tk.DISABLED)
         else:
             speed_entries[stage_name].config(state=tk.NORMAL)
+
+    def open_experimental_info():
+        nonlocal experimental_info_result
+        dialog = ExperimentalInfoDialog(root, "Experimental Information")
+        experimental_info_result = dialog.result
 
     def control_arduino():
         dialog = DropdownDialog(root, "Select COM Port")
@@ -148,12 +171,15 @@ def initiate_fluidics_gui():
 
     ttk.Label(fluid_controls_frame, text="Time Between Stages (seconds):").pack()
     ttk.Entry(fluid_controls_frame, textvariable=time_between_stages).pack()
-
+    
+    #experimental info button
+    ttk.Button(fluid_controls_frame, text="Experimental Info", command=open_experimental_info).pack()
     # "Start Fluidics" button
     ttk.Button(fluid_controls_frame, text="Start Fluidics", command=start_fluidics).pack()
 
+    
     # Create the "Connect" section
-    connect_frame = ttk.LabelFrame(root, text="Connect")
+    connect_frame = ttk.LabelFrame(root, text="Connect to Instruments")
     connect_frame.pack(side='left', padx=10, pady=10, fill='y')
 
     # Buttons for connecting and controlling instruments
@@ -178,7 +204,8 @@ def initiate_fluidics_gui():
         "skip_stages": {stage: skip_stages[stage].get() for stage in speeds},
         "pump" : pump,
         "mvp" : mvp1,
-        "servo" : ser
+        "servo" : ser,
+        "experimental_info": experimental_info_result
     }
 
 # Example code for accessing user data
@@ -189,3 +216,4 @@ if __name__ == "__main__":
     print("Time Between Stages:", user_data["time_between_stages"])
     print("Shaker Duration:", user_data["shaker_duration"])
     print("Skip Stages:", user_data["skip_stages"])
+    print(user_data["experimental_info"])
