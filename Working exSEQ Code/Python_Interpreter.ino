@@ -1,4 +1,5 @@
 #include <Servo.h>
+#include <math.h>
 
 Servo myservo;  // Create a servo object
 int pos = 90;   // Initial servo position
@@ -19,7 +20,7 @@ void loop() {
       int spaceIndex = command.indexOf(' ');
       if (spaceIndex != -1) {
         int targetPosition = command.substring(5).toInt();
-        while (myservo.read() != targetPosition) {
+        while (round(myservo.read()) != targetPosition) {
           pos = myservo.read(); // Set the initial position
           if (pos > targetPosition) {
             myservo.write(pos - 1);
