@@ -3,7 +3,7 @@ This repository contains the code and design parts for the new expansion microsc
 
 *USED IN FINAL SETUP The 'Final Shaker Parts' contains all the components used for 3D printing the shaker currently used in the lab.
 
-*USED IN FINAL SETUP The 'Working exSeq Code' all the python scripts required to run expansion sequencing. You can do this by running the fluidics script which will open a user friendly GUI.
+*USED IN FINAL SETUP The 'Working exSeq Code' all the python scripts required to run expansion sequencing. You can do this by running the fluidics.py script which will open a user friendly GUI.
 
 *TESTING The 'Peristaltic Pump Code' folder contains python files that can be used in order to run the perstaltic pump indepdently from the rest of the system. This folder was mainly used for testing purposes.
 
