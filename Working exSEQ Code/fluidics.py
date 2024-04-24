@@ -41,7 +41,7 @@ def flowrate(cycle_id, user_data):
         "PBST Long": 0.0,
         "Imaging Buffer": 0.0
     }
-    return (user_data["Speeds"][cycle_id])*(48/max_flowrate[cycle_id])
+    return round(user_data["Speeds"][cycle_id])*(48/max_flowrate[cycle_id])
     
 
 
@@ -115,7 +115,8 @@ def stripping(mvp1, pump, user_data):
     time.sleep(10)
 
     # Specify the duration in seconds
-    duration_seconds = 60*(200/user_data["speeds"][cycle_id])  
+    
+    duration_seconds = 60*(650/user_data["speeds"][cycle_id])  
 
     start_time = time.time()
 
@@ -168,7 +169,7 @@ def pbst_longwash(mvp1, pump, user_data):
     time.sleep(10)
 
 
-    duration_seconds = 60*(200/user_data["speeds"][cycle_id])
+    duration_seconds = 60*(650/user_data["speeds"][cycle_id])
 
     start_time = time.time()
 
@@ -227,7 +228,7 @@ def PBS_6(mvp1, pump, user_data):
     mvp.change_valve_pos(mvp1, 0, 1)
     time.sleep(10)
 
-    duration_seconds = 60*(200/user_data["speeds"][cycle_id])
+    duration_seconds = 60*(650/user_data["speeds"][cycle_id])
     
     start_time = time.time()
 
@@ -258,7 +259,7 @@ def hyb_lig_clean(mvp1, pump, user_data): # DO THE FOLLWING 3 FUNCTIONS NEED TO 
     mvp.change_valve_pos(mvp1,0, 2)
     time.sleep(10)
 
-    duration_seconds = 60*(200/user_data["speeds"][cycle_id])
+    duration_seconds = 60*(650/user_data["speeds"][cycle_id])
     
     start_time = time.time()
 
@@ -305,7 +306,7 @@ def hyb_lig_rinse(mvp1, pump, user_data):
 
     mvp.change_valve_pos(mvp1, 0, 2)
     time.sleep(10)
-    duration_seconds = 60*(200/user_data["speeds"][cycle_id])
+    duration_seconds = 60*(650/user_data["speeds"][cycle_id])
     
     start_time = time.time()
 
@@ -352,7 +353,7 @@ def hyb_lig_clear(mvp1, pump, user_data):
     mvp.change_valve_pos(mvp1, 0, 2)
     time.sleep(2)
     move_servo(45)
-    duration_seconds = 60*(200/user_data["speeds"][cycle_id])
+    duration_seconds = 60*(650/user_data["speeds"][cycle_id])
     
     start_time = time.time()
     print('Hybridization line clear start ' + str(datetime.datetime.now()))
@@ -400,7 +401,7 @@ def lig(mvp1, pump, user_data):#*** what are these two functions for ?
     mvp.change_valve_pos(mvp1, 0, 3)
     time.sleep(2) 
 
-    duration_seconds = 60*(200/user_data["speeds"][cycle_id])
+    duration_seconds = 60*(650/user_data["speeds"][cycle_id])
     move_servo(45)
     start_time = time.time()
 
@@ -429,7 +430,7 @@ def img(mvp1, pump, user_data):
     mvp.change_valve_pos(mvp1, 0, 6)
     time.sleep(2)
 
-    duration_seconds = 60*(200/user_data["speeds"][cycle_id])
+    duration_seconds = 60*(650/user_data["speeds"][cycle_id])
     
     start_time = time.time()
 
@@ -456,7 +457,7 @@ def img8hr(mvp1,pump,user_data):
     move_servo(45)
     print("Imaging starting "+ str(datetime.datetime.now))
 
-    duration_seconds = 60*(200/user_data["speeds"][cycle_id])
+    duration_seconds = 60*(650/user_data["speeds"][cycle_id])
     
     start_time = time.time()
 
@@ -485,7 +486,7 @@ def pbst_short(mvp1, pump, user_data):
     print("Wash Start " + str(datetime.datetime.now()))
     
     # Set up timer for 10 minutes (600 seconds)
-    duration_seconds = 60*(200/user_data["speeds"][cycle_id])
+    duration_seconds = 60*(650/user_data["speeds"][cycle_id])
     start_time = time.time()
     print("waiting for PBST solution to fill up " + str(datetime.datetime.now()))
     pump.push(set_flowrate(user_data["speeds"][cycle_id])) # Adjust as needed
@@ -533,7 +534,7 @@ def PBS_10(mvp1,pump, user_data):
     pump.push(set_flowrate(user_data["speeds"][cycle_id])) #change as needed 
    
     #Set timer for 435 seconds
-    duration_seconds = 60*(200/user_data["speeds"][cycle_id])
+    duration_seconds = 60*(650/user_data["speeds"][cycle_id])
     start_time = time.time()
     pump.push(set_flowrate(user_data["speeds"][cycle_id])) # Adjust as needed
     while True:
@@ -556,7 +557,7 @@ def hybridization(mvp1, pump, user_data):
 
     
     # set timer for 3 minutes  
-    duration_seconds = 60*(200/user_data["speeds"][cycle_id])
+    duration_seconds = 60*(650/user_data["speeds"][cycle_id])
     start_time = time.time()
     print("Hybridization initiated " + str(datetime.datetime.now()))    
     pump.push(set_flowrate(user_data["speeds"][cycle_id])) #change as needed
@@ -581,7 +582,7 @@ def ligation_buffer(mvp1,pump, user_data):
 
     print("Ligation Buffer Started " + str(datetime.datetime.now()))
     
-    duration_seconds = 60*(200/user_data["speeds"][cycle_id])
+    duration_seconds = 60*(650/user_data["speeds"][cycle_id])
     start_time = time.time()
     pump.push(set_flowrate(user_data["speeds"][cycle_id]))
     while True:
@@ -609,7 +610,7 @@ def ligation_solution(mvp1,pump, user_data):
     time.sleep(10)  # Pause for calibration
     # Wait for the angle change timer to complete
     pump.push(set_flowrate(user_data["speeds"][cycle_id])) # change as needed 
-    duration_seconds = 60*(200/user_data["speeds"][cycle_id])
+    duration_seconds = 60*(650/user_data["speeds"][cycle_id])
     start_time = time.time()
     print("Ligation Solution Input Start " + str(datetime.datetime.now()))
     while True:
@@ -656,7 +657,7 @@ def tester_function(mvp1,pump):
 def shacker_test(pump, mvp1):
     print("testing pump and Shacker timing")
     print("Shaking Started "+ str(datetime.datetime.now()) + " shacker pause is: " + str(shacker_pause))
-    mvp.change_valve_pos(mvp1,0,7)
+    mvp.change_valve_pos(mvp1,0,4)
     duration_seconds = 30
     start_time = time.time()
     while True:
@@ -713,7 +714,7 @@ if __name__ == "__main__":
     # set all the variables
     gsioc_COM = "COM3" # important: choose correct communitcation port
     mvp1_COM = "COM4"
-           
+    system_volume = 6
     # stripping_solution_speed = user_data["speeds"]["Stripping Solution"]
     # print(f"Stripping Solution Speed: {stripping_solution_speed} mL/s")
     # if user_data["skip_stages"]['Stripping Solution']== 1:
@@ -734,7 +735,7 @@ if __name__ == "__main__":
     
     # connect the pump
     
-    fluidics_test(mvp1,pump,user_data,t_between)
+    # fluidics_test(mvp1,pump,user_data,t_between)
     # tester_function(mvp1, pump)
     shacker_test(pump,mvp1)
     
