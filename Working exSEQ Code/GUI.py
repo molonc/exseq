@@ -34,7 +34,9 @@ class DropdownDialog(simpledialog.Dialog):
         ttk.Label(master, text="Select a COM Port:").grid(row=0, column=0)
         self.combobox = ttk.Combobox(master, values=list_available_com_ports())
         self.combobox.grid(row=0, column=1)
-        self.combobox.set(list_available_com_ports()[0])
+        ports = list_available_com_ports()
+        port = ports[0] if len(ports) >= 1 else 'No COM Available' 
+        self.combobox.set(port)
         return self.combobox
 
     def apply(self):
