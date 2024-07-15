@@ -1,19 +1,17 @@
-#Class for controlling Arduino shaker made by sayeholoumi and benrob13
+#Class for controlling Arduino shaker 
 '''
 Supported commands
 - READ: Get angle
 - SET_DURATION: set shaker duration
 - MOVE: move servo to given angle
 '''
-
-
 import serial
 
 
 class Shaker:
 
     def __init__(self, port:str = 'COM3',*,shaker_duration:int = 3,baud:int = 9600) -> None:
-        self.ser = serial.Serial(port=port)
+        self.ser = serial.Serial(port=port,baudrate=baud)
         self.duration = shaker_duration
         self.port = port
 
