@@ -82,6 +82,7 @@ def initiate_fluidics_gui():
             speed_entries[stage_name].config(state=tk.DISABLED)
         else:
             speed_entries[stage_name].config(state=tk.NORMAL)
+            speed_vars[stage_name].set(0.0)
 
     def open_experimental_info():
         nonlocal experimental_info_result
