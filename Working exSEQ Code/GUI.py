@@ -5,6 +5,8 @@ import gsioc
 import serial
 from serial.tools import list_ports
 
+import fluidics as fl
+
 # this is so we can pass these back into our fluidics code 
 class ExperimentalInfoDialog(simpledialog.Dialog):
     def body(self, master):
@@ -55,7 +57,7 @@ def initiate_fluidics_gui():
         "Ligation Buffer": 0.0,
         "Ligation Solution": 0.0,
         "PBST Long": 0.0,
-        "Imaging Buffer": 0.0,
+        "Imaging Buffer": 0.8,
     }
 
     time_between_stages = tk.StringVar()
@@ -75,6 +77,10 @@ def initiate_fluidics_gui():
         print(user_input)
         root.destroy()
         # Implement the fluidics control logic here
+
+
+
+
 
     def update_speed_entries(stage_name):
         if skip_stages[stage_name].get() == 1:

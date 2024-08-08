@@ -32,14 +32,14 @@ def set_flowrate(flowrate):
 
 def flowrate(cycle_id, user_data):
     max_flowrate = { #fill this out by running the specific fluid for 60 seconds and see how much volume left syringe 
-        "Stripping Solution": 0.0,
-        "PBST Short": 0.0,
-        "PBS": 0.0,
-        "Hybridization": 0.0,
+        "Stripping Solution": 3.8 / 5,
+        "PBST Short": 4.2 / 5,
+        "PBS": 4.2 / 5,
+        "Hybridization": 0.8,
         "Ligation Buffer": 0.0,
         "Ligation Solution": 0.0,
-        "PBST Long": 0.0,
-        "Imaging Buffer": 0.0
+        "PBST Long": 4.2 / 5,
+        "Imaging Buffer": 0.8
     }
     return round(user_data["Speeds"][cycle_id])*(48/max_flowrate[cycle_id])
     
