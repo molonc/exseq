@@ -1,4 +1,5 @@
 from gsioc import GSIOC
+from mvp import MVP
 from time import sleep, time
 from GUI import list_available_com_ports
 from fluidics import set_flowrate
@@ -21,13 +22,20 @@ Params:
 
 
 '''
-def dye_test(pump:GSIOC,shaker:Shaker,*,flowrate:float = 0.333,volume:float = 650, wait=10):
+def dye_test(pump:GSIOC,shaker:Shaker,mvp:MVP,*,flowrate:float = 0.333,volume:float = 650, wait=10):
+    
     rpm = set_flowrate(flowrate) 
     duration_seconds = 60*(volume/(flowrate*100)) # time to push 6.5ml
 
     shaker.move_servo(45)
     sleep(2) 
+    mvp.turn_clockwise(3) #push dye
+    pump.push(rpm*100)
+    sleep(duration_seconds)
+    pump.stop()
+    sleep(2)
 
+    mvp.turn_clockwise(3) #push imaging
     pump.push(rpm*100)
     sleep(duration_seconds)
     pump.stop()
@@ -43,10 +51,16 @@ def dye_test(pump:GSIOC,shaker:Shaker,*,flowrate:float = 0.333,volume:float = 65
 if __name__ == '__main__':
     pump = GSIOC()
     pump_port  = '/dev/ttyUSB0' # known
+    mvp_port = '/dev/ttyUSB1'
     arduino_port = '/dev/ttyACM0'
+    mvp = MVP()
     shaker = Shaker(arduino_port)
 
     pump.connect(pump_port)
+    mvp.connect(mvp_port)
+    mvp.initialize()
+
     # test_flowrate(pump,RPM,wait=2)
-    dye_test(pump,shaker,0.333) #nikon flowrate
+    dye_test(pump,shaker,mvp,flowrate=0.333) #nikon flowrate
     pump.close_serial()
+    mvp.close_serial()
