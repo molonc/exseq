@@ -10,11 +10,14 @@ import serial
 
 class Shaker:
 
-    def __init__(self, port:str = 'COM3',*,shaker_duration:int = 3,baud:int = 9600) -> None:
-        self.ser = serial.Serial(port=port,baudrate=baud)
+    def __init__(self, *, port:str = 'COM3',shaker_duration:int = 3,baud:int = 9600) -> None:
+        self.ser = None
         self.duration = shaker_duration
         self.port = port
-
+        self.baud = baud
+    def connect(self, port:str = 'COM3'):
+        self.port = port
+        self.ser = serial.Serial(port=self.port,baudrate=self.baud)
     def _write(self,cmd:str = 'Read\n'):
         try:
             self.ser.write(cmd.encode())

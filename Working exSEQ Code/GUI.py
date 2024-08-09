@@ -205,9 +205,9 @@ def initiate_fluidics_gui():
         "time_between_stages": int(time_between_stages.get()),
         "shaker_duration": float(shaker_duration.get()),
         "skip_stages": {stage: skip_stages[stage].get() for stage in speeds},
-        "pump" : pump,
-        "mvp" : mvp1,
-        "servo" : ser,
+        "pump" : None,
+        "mvp" : None,
+        "servo" : None,
         "experimental_info": experimental_info_result
     }
 

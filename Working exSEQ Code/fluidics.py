@@ -1,12 +1,16 @@
-import time
-import mvp
-import gsioc
+from time import sleep, time
+
+#Devices
+import mvp #legacy
+from mvp import MVP,change_valve_pos
+from gsioc import GSIOC
+from shaker import Shaker
+
+from config.config import getConfig
 import datetime
 import GUI
-# from pyfirmata import Arduino, SERVO
-from threading import Timer
-import threading
 import serial
+from enum import IntEnum
 # MVP1:
 #   - 1 1* PBS
 #   - 2 Hydrbidization Solution
@@ -22,6 +26,132 @@ import serial
 # Initialize the serial connection
 # ser = serial.Serial(com_port, baudrate=9600)
 
+
+'''
+Small enumeration for all of our buffers
+'''
+class Buffer(IntEnum):
+    STRIPPING = 6
+    PBST_SHORT = 5
+    PBS = 0
+    HYBRIDIZATION = 1
+    LIGATION_BUFFER = 2
+    LIGATION_SOLUTION = 3
+    PBST_LONG = 5
+    IMAGING = 4
+
+'''
+    Encapsulates  Fluidics functions for Exseq Experiment: 
+    @params config_path = path to config file
+    @process
+    - set_flowrate: flowrate -> rpm mapping
+    - run_fluidics_round -> runs all buffers 
+'''
+class Fluidics:
+    def __init__(self,*, config_path = './config/config.yaml') -> None:
+        
+        self.__config = getConfig(path = config_path)
+        self.pump = GSIOC()
+        self.mvp = MVP()
+        self.shaker = Shaker()
+
+ 
+        self.pump_port = self.__config['pump port']
+        self.mvp_port = self.__config['mvp port']
+        self.shaker_port = self.__config['shaker port']
+
+        self.optimal_volume = 650 # optimal volume to clear chamber in ul
+
+        #mapping from mvp valve position to round name
+        self.cycle_id = {
+            6:"Stripping Solution",
+            5:"PBST",
+            0:"PBS",
+            1:"Hybridization",
+            2:"Ligation Buffer",
+            3:"Ligation Solution",
+            4:"Imaging Buffer"           
+        }
+        self.optimal_flowrate = self.__config['speeds']
+        self.max_flowrate = self.__config['max flowrate']
+
+        self.stage_durations =  self.__config['stage durations']
+        self.shaker_duration = self.__config['shaker duration']
+    def connect(self):
+        self.pump.connect(self.pump_port)
+        self.shaker.connect(self.shaker_port)
+        self.mvp.connect(self.mvp_port)
+        self.mvp.initialize()
+        sleep(5) #wait for pump *protocol doesn't awk*
+
+    def set_flowrate(self,flowrate):
+        return round(flowrate*68.571)   
+    
+    '''
+        Pushes 1 buffer through chamber
+        @params: 
+        - buffer: buffer id or mvp valve position - 1;  best to use Buffer enum
+        - shake: whether the chamber should be shaken after fluidics rounds
+    '''
+    def _push_buffer(self,buffer:int,shake:bool = False):
+        self.shaker.move_servo(45)
+        change_valve_pos(self.mvp,0, (buffer % 8) + 1) # out of bounds protection valve goes from 1-8
+
+        flowrate = self.optimal_flowrate[self.cycle_id[buffer]] #optimal flowrate for that buffer
+
+        # calculates as optimal_volume / buffer max speed * 60
+        #volume is in ul and flowrate is in ul/min * 100)
+        push_duration = 60 * (self.optimal_volume / (flowrate * 100))
+
+        sleep(2)
+        start = time()
+        self.pump.push(self.set_flowrate(flowrate) *100)
+        sleep(push_duration)
+        self.pump.stop()
+
+        #shakes coverslip to avoid bubbles?  only for 3 cycles
+        if shake:
+            start = time()
+            while time() - start <= self.shaker_duration:
+                self.shaker.move_servo(135)
+                sleep(0.5)
+                self.shaker.move_servo(45)
+                sleep(2)
+            self.shaker.move_servo(90)
+    
+    #run full round of buffers
+    def run_fluidics_round(self):
+        for buffer in Buffer:
+            
+            if buffer == Buffer.STRIPPING or \
+            buffer == Buffer.PBST_LONG or \
+            buffer == Buffer.PBST_SHORT: # shake these buffers 
+                self._push_buffer(buffer.value,shake = True)
+            else: self._push_buffer(buffer.value,shake = False)
+
+    
+    
+    #tests every buffer in our system
+    @staticmethod
+    def test_system(fluid_system):
+        for buffer in Buffer:
+
+            if buffer == Buffer.STRIPPING or \
+            buffer == Buffer.PBST_LONG or buffer == Buffer.PBST_SHORT:
+                fluid_system._push_buffer(buffer.value,shake = True)
+
+            else: fluid_system._push_buffer(buffer.value,shake = False)
+
+
+    
+
+
+
+
+
+'''
+Legacy verbatim translation from boydens lab matlab code into python 
+'''
 
 #this is to make it so we dont need to change a bunch of code
 global ser
@@ -517,7 +647,8 @@ def pbst_short(mvp1, pump, user_data):
     print("Shaking Completed "+ str(datetime.datetime.now()) )
     move_servo(90)
     time.sleep(5)       
-    
+            # calculates as optimal_volume / buffer max speed * 60
+        #volume is in ul and flowrate is in ul/min * 100)
 def PBS_10(mvp1,pump, user_data):
     cycle_id = "PBS"
     if user_data["skip_stages"][cycle_id] == 1:
@@ -720,27 +851,31 @@ if __name__ == "__main__":
     # if user_data["skip_stages"]['Stripping Solution']== 1:
     #     print("Stage was skipped")
     
-    """Code to test: """
-    user_data = GUI.initiate_fluidics_gui()
-    # This Code Tests the system
-    mvp1 = user_data["mvp"]
-    pump = user_data["pump"]
-    ser = user_data["servo"]
+    # """Code to test: """
+    # user_data = GUI.initiate_fluidics_gui()
+    # # This Code Tests the system
+    # mvp1 = user_data["mvp"]
+    # pump = user_data["pump"]
+    # ser = user_data["servo"]
     
-    t_between = user_data["time_between_stages"]
-    set_servo_duration(user_data["shaker_duration"])
+    # t_between = user_data["time_between_stages"]
+    # set_servo_duration(user_data["shaker_duration"])
     
-    shacker_pause = user_data["shaker_duration"] # I did this to be lazy and not have to pass user_data into all the move_servo functions 
-    #Shaker pause is just the amount of time in the cpp 
+    # shacker_pause = user_data["shaker_duration"] # I did this to be lazy and not have to pass user_data into all the move_servo functions 
+    # #Shaker pause is just the amount of time in the cpp 
     
-    # connect the pump
+    # # connect the pump
     
-    # fluidics_test(mvp1,pump,user_data,t_between)
-    # tester_function(mvp1, pump)
-    shacker_test(pump,mvp1)
+    # # fluidics_test(mvp1,pump,user_data,t_between)
+    # # tester_function(mvp1, pump)
+    # shacker_test(pump,mvp1)
     
     
-    ser.close()
+    # ser.close()
+
+    fluid = Fluidics()
+    fluid.connect()
+    fluid._push_buffer(Buffer.STRIPPING.value,shake=True)
 
 
 
