@@ -1,6 +1,8 @@
 import time
 from serial_com import SerialObject
+import logging as lg
 
+log = lg.getLogger(__name__)
 
 class GSIOC(SerialObject):
     def __init__(self, serial=None):
@@ -25,7 +27,7 @@ class GSIOC(SerialObject):
             time.sleep(1.5)
             self._enable_external()
             self.set_speed(3600)
-            print("Connected to minipuls_3")
+            log.info("Connected to minipuls_3")
         except Exception as e:
             #  now our code throws an error instead of just printing one and continuing
             raise ConnectionError(f"Error connecting to Minipuls 3: {e}")
@@ -42,28 +44,28 @@ class GSIOC(SerialObject):
 
     def set_speed(self, speed):
         try:
-            print("set speed")
+            log.debug("set speed")
             self.buffered_command("R%d" % speed)
         except Exception as e:
-            raise ConnectionError(f"Function is not enabled, please check pump connection: {e}")
+            log.error(f"Failed to  set_speed:\n{e}")
 
 
     def stop(self):
         try:
-            print("stop")
+            log.debug("stop")
             self.buffered_command("KH")
         except Exception as e:
-            raise ConnectionError(f"Function is not enabled, please check pump connection: {e}")
+            log.error(f"Failed to  stop:\n{e}")
 
     def push(self, speed):
         try:
-            print("push")
+            log.debug("push")
             self._run(speed, 0) #CW direction - backwards
         except Exception as e:
-            raise ConnectionError(f"Function is not enabled, please check pump connection: {e}")
+            log.error(f"Failed to  push:\n{e}")
 
     def draw(self, speed):
         try:
             self._run(speed, 1) #CCW direction - forwards
         except Exception as e:
-            raise ConnectionError(f"Function is not enabled, please check pump connection: {e}")
+            log.error(f"Failed to  draw:\n{e}")

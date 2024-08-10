@@ -83,7 +83,7 @@ class Fluidics:
         self.mvp.connect(self.mvp_port)
         self.mvp.initialize()
         sleep(5) #wait for pump *protocol doesn't awk*
-
+    #@param flowrate: in ml/min
     def set_flowrate(self,flowrate):
         return round(flowrate*68.571)   
     
@@ -100,7 +100,7 @@ class Fluidics:
         flowrate = self.optimal_flowrate[self.cycle_id[buffer]] #optimal flowrate for that buffer
 
         # calculates as optimal_volume / buffer max speed * 60
-        #volume is in ul and flowrate is in ul/min * 100)
+        #volume is in 10* ul and flowrate is in 10* ul/min * 100)
         push_duration = 60 * (self.optimal_volume / (flowrate * 100))
 
         sleep(2)

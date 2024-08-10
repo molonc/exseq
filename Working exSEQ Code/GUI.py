@@ -1,5 +1,6 @@
 import tkinter as tk
 from tkinter import ttk, simpledialog
+from config.config import setConfig
 import mvp
 import gsioc
 import serial
@@ -207,16 +208,11 @@ def initiate_fluidics_gui():
         "skip_stages": {stage: skip_stages[stage].get() for stage in speeds},
         "pump" : None,
         "mvp" : None,
-        "servo" : None,
+        "servo" :None,
         "experimental_info": experimental_info_result
     }
 
 # Example code for accessing user data
 if __name__ == "__main__":
     user_data = initiate_fluidics_gui()
-    print("Collected User Data:")
-    print("Speeds:", user_data["speeds"])
-    print("Time Between Stages:", user_data["time_between_stages"])
-    print("Shaker Duration:", user_data["shaker_duration"])
-    print("Skip Stages:", user_data["skip_stages"])
-    print(user_data["experimental_info"])
+    setConfig(user_data,path='./test.yaml')

@@ -2,6 +2,10 @@
 import time
 from serial_com import SerialObject
 
+import logging as lg
+
+log = lg.getLogger(__name__)
+
 
 class MVP(SerialObject):
     def __init__(self, serial=None):
@@ -37,12 +41,12 @@ class MVP(SerialObject):
         self.command("aFR")
         start_time = time.time()
         resp = self.serial.read(1)
-        print(resp)
+        log.debug(resp)
         while resp.decode() != "Y":
             self.command("aFR")
             resp = self.serial.read(1)
             time.sleep(0.5)
-            print(resp)
+            log.debug(resp)
             if time.time() - start_time > timeout:
                 break
 
@@ -53,7 +57,7 @@ def connect_all(mvp1, mvp2, mvp1_COM, mvp2_COM):
         mvp1.connect(mvp1_COM)
         mvp2.connect(mvp2_COM)
     except:
-        print("Error Connecting to Valve Controllers")
+        log.error("Error Connecting to Valve Controllers")
 
 
 def initialize_all(mvp1, mvp2):
@@ -62,7 +66,7 @@ def initialize_all(mvp1, mvp2):
         mvp2.initialize()
         time.sleep(10)
     except:
-        print("Function is not enabled, please check valve controller connection..")
+        log.error("Function is not enabled, please check valve controller connection..")
 
 
 def change_valve_pos(mvp, dir, pos):
@@ -74,4 +78,4 @@ def change_valve_pos(mvp, dir, pos):
         else:
             print("Invalid direction!")
     except:
-        print("Function is not enabled...")
+        log.error("Function is not enabled...")

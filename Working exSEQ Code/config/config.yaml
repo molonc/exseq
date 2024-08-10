@@ -11,7 +11,7 @@ speeds:
   Imaging Buffer: 0.333
 
 time between stages: 1
-shaker duration: 0.075
+shaker duration: 30
 
 skip stages:
   Stripping Solution: 1
@@ -42,8 +42,8 @@ stage durations:
   Ligation Solution: 1
   PBST Long: 1 
   Imaging Buffer: 1
-  
-   
+
+
 #Serial Devices
 pump port: '/dev/ttyUSB0'
 mvp port: '/dev/ttyUSB1'
