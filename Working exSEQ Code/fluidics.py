@@ -48,7 +48,7 @@ class Buffer(IntEnum):
     - run_fluidics_round -> runs all buffers 
 '''
 class Fluidics:
-    def __init__(self,*, config_path = './config/config.yaml') -> None:
+    def __init__(self,*, config_path = './config/config.yaml',optimal_volume = -1) -> None:
         
         self.__config = getConfig(path = config_path)
         self.pump = GSIOC()
@@ -60,12 +60,12 @@ class Fluidics:
         self.mvp_port = self.__config['mvp port']
         self.shaker_port = self.__config['shaker port']
 
-        self.optimal_volume = 650 # optimal volume to clear chamber in ul
+        self.optimal_volume = self.__config['optimal volume'] if optimal_volume == -1 else optimal_volume # optimal volume to clear chamber
 
         #mapping from mvp valve position to round name
         self.cycle_id = {
             6:"Stripping Solution",
-            5:"PBST",
+            5:"PBST Long",
             0:"PBS",
             1:"Hybridization",
             2:"Ligation Buffer",
@@ -85,7 +85,7 @@ class Fluidics:
         sleep(5) #wait for pump *protocol doesn't awk*
     #@param flowrate: in ml/min
     def set_flowrate(self,flowrate):
-        return round(flowrate*68.571)   
+        return round(flowrate*68.571) 
     
     '''
         Pushes 1 buffer through chamber
@@ -93,15 +93,16 @@ class Fluidics:
         - buffer: buffer id or mvp valve position - 1;  best to use Buffer enum
         - shake: whether the chamber should be shaken after fluidics rounds
     '''
-    def _push_buffer(self,buffer:int,shake:bool = False):
+    def _push_buffer(self,buffer:int,shake:bool = False,volume:int = -1):
         self.shaker.move_servo(45)
-        change_valve_pos(self.mvp,0, (buffer % 8) + 1) # out of bounds protection valve goes from 1-8
+        change_valve_pos(self.mvp,0, (buffer % 8)) # out of bounds protection valve goes from 1-8
 
         flowrate = self.optimal_flowrate[self.cycle_id[buffer]] #optimal flowrate for that buffer
 
         # calculates as optimal_volume / buffer max speed * 60
         #volume is in 10* ul and flowrate is in 10* ul/min * 100)
-        push_duration = 60 * (self.optimal_volume / (flowrate * 100))
+        vol = volume if volume != -1 else self.optimal_volume
+        push_duration = 60 * (vol / (flowrate * 100))
 
         sleep(2)
         start = time()
@@ -843,7 +844,7 @@ def fluidics_test(mvp1,pump,user_data,t_between):
 
 if __name__ == "__main__":
     # set all the variables
-    gsioc_COM = "COM3" # important: choose correct communitcation port
+    gsioc_COM = "" # important: choose correct communitcation port
     mvp1_COM = "COM4"
     system_volume = 6
     # stripping_solution_speed = user_data["speeds"]["Stripping Solution"]
@@ -874,8 +875,16 @@ if __name__ == "__main__":
     # ser.close()
 
     fluid = Fluidics()
+    # fluid.shaker.connect(fluid.shaker_port)
+    # sleep(3)
+    # fluid.shaker.move_servo(45)
+    # fluid.shaker.move_servo(90)
     fluid.connect()
-    fluid._push_buffer(Buffer.STRIPPING.value,shake=True)
+    print("pushing PBST")
+    fluid._push_buffer(Buffer.PBST_LONG.value,shake=False,volume=600)
+    print('pushing Stripping')
+    fluid._push_buffer(Buffer.STRIPPING.value,shake=False,volume=1000)
+
 
 
 
