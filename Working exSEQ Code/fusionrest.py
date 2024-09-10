@@ -193,3 +193,7 @@ def run_protocol_completely(protocol_name):
 	run(protocol_name)
 	wait_until_running()
 	wait_until_idle()
+
+
+if __name__ == '__main__':
+	run_protocol_completely("Protocol A")
