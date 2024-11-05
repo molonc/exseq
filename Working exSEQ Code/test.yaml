@@ -5,20 +5,20 @@ servo: null
 shaker_duration: 0.075
 skip_stages:
   Hybridization: 0
-  Imaging Buffer: 1
-  Ligation Buffer: 1
+  Imaging Buffer: 0
+  Ligation Buffer: 0
   Ligation Solution: 0
   PBS: 0
-  PBST Long: 1
+  PBST Long: 0
   PBST Short: 0
   Stripping Solution: 0
 speeds:
-  Hybridization: 3000.0
-  Imaging Buffer: 0
-  Ligation Buffer: 0
-  Ligation Solution: 0.0
-  PBS: 300.0
-  PBST Long: 0
-  PBST Short: 3.0
-  Stripping Solution: 30.0
+  Hybridization: 33.300000000000004
+  Imaging Buffer: 33.300000000000004
+  Ligation Buffer: 33.300000000000004
+  Ligation Solution: 33.300000000000004
+  PBS: 33.300000000000004
+  PBST Long: 33.300000000000004
+  PBST Short: 33.300000000000004
+  Stripping Solution: 33.300000000000004
 time_between_stages: 1

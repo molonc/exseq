@@ -1,3 +1,6 @@
+protocols: 
+  - 'Hello world'
+  - 'Goodbye World'
 #Fluid settings
 optimal volume: 650
 speeds:
@@ -11,7 +14,7 @@ speeds:
   Imaging Buffer: 0.333
 
 time between stages: 1
-shaker duration: 30
+shaker duration: 0.075
 
 skip stages:
   Stripping Solution: 1
@@ -45,7 +48,7 @@ stage durations:
 
 
 #Serial Devices
-pump port: '/dev/ttyUSB0'
-mvp port: '/dev/ttyUSB1'
+pump port: '/dev/ttyUSB3'
+mvp port: '/dev/ttyUSB2'
 shaker port: '/dev/ttyACM0'
 

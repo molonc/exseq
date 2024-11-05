@@ -50,17 +50,17 @@ class Buffer(IntEnum):
 class Fluidics:
     def __init__(self,*, config_path = './config/config.yaml',optimal_volume = -1) -> None:
         
-        self.__config = getConfig(path = config_path)
+        self._config = getConfig(path = config_path)
         self.pump = GSIOC()
         self.mvp = MVP()
         self.shaker = Shaker()
 
  
-        self.pump_port = self.__config['pump port']
-        self.mvp_port = self.__config['mvp port']
-        self.shaker_port = self.__config['shaker port']
+        self.pump_port = self._config['pump port']
+        self.mvp_port = self._config['mvp port']
+        self.shaker_port = self._config['shaker port']
 
-        self.optimal_volume = self.__config['optimal volume'] if optimal_volume == -1 else optimal_volume # optimal volume to clear chamber
+        self.optimal_volume = self._config['optimal volume'] if optimal_volume == -1 else optimal_volume # optimal volume to clear chamber
 
         #mapping from mvp valve position to round name
         self.cycle_id = {
@@ -72,11 +72,20 @@ class Fluidics:
             3:"Ligation Solution",
             4:"Imaging Buffer"           
         }
-        self.optimal_flowrate = self.__config['speeds']
-        self.max_flowrate = self.__config['max flowrate']
+        self.id_cycle = {
+            "Stripping Solution":6,
+            "PBST Long":5,
+            "PBS":0,
+            "Hybridization":1,
+            "Ligation Buffer":2,
+            "Ligation Solution":3,
+            "Imaging Buffer":4   
+        }
+        self.optimal_flowrate = self._config['speeds']
+        self.max_flowrate = self._config['max flowrate']
 
-        self.stage_durations =  self.__config['stage durations']
-        self.shaker_duration = self.__config['shaker duration']
+        self.stage_durations =  self._config['stage durations']
+        self.shaker_duration = self._config['shaker duration']
     def connect(self):
         self.pump.connect(self.pump_port)
         self.shaker.connect(self.shaker_port)

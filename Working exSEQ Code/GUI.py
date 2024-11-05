@@ -1,6 +1,6 @@
 import tkinter as tk
 from tkinter import ttk, simpledialog
-from config.config import setConfig
+from config.config import setConfig,getConfig
 import mvp
 import gsioc
 import serial
@@ -46,22 +46,13 @@ class DropdownDialog(simpledialog.Dialog):
 def initiate_fluidics_gui():
     root = tk.Tk()
     root.title("Fluidics Control")
-
+    config = getConfig()
     # Initialize variables
-    speeds = {
-        "Stripping Solution": 0.0,
-        "PBST Short": 0.0,
-        "PBS": 0.0,
-        "Hybridization": 0.0,
-        "Ligation Buffer": 0.0,
-        "Ligation Solution": 0.0,
-        "PBST Long": 0.0,
-        "Imaging Buffer": 0.0,
-    }
+    speeds = config['speeds']  
 
     time_between_stages = tk.StringVar()
     shaker_duration = tk.StringVar()
-    shaker_duration.set("0.075")
+    shaker_duration.set(str(config['shaker duration']))
     skip_stages = {stage: tk.IntVar() for stage in speeds}
     experimental_info_result = None
 
