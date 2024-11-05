@@ -9,13 +9,15 @@ from GUI import DropdownDialog,list_available_com_ports,ExperimentalInfoDialog
 from fusionrest import run, get_state
 from time import sleep
 from threading import Thread
+from enum import Enum
+
 '''
     Frame for holding all the values associated with the fluidics system
     Set flowrates which stages to skip etc...
 '''
 class Fluidics_Frame(tk.Frame):
-    def __init__(self,fluids:Fluidics):
-        super().__init__()
+    def __init__(self,fluids:Fluidics,root):
+        super().__init__(root)
         self.fluids:Fluidics = fluids
 
         self.speed_frame = tk.Frame(self)
@@ -57,7 +59,11 @@ class Fluidics_Frame(tk.Frame):
 class DeviceConnection(tk.Frame):
     def __init__(self,fluidics,root):
         super().__init__(root)
-
+        self.connection = {
+            'pump':False,
+            'mvp':False,
+            'shaker':False
+        }
         self.fluid = fluidics
         self.conn_frame = tk.Frame(self)
         #Draw
@@ -88,21 +94,116 @@ class DeviceConnection(tk.Frame):
         port = self.set_shaker.get()
         self.fluid.shaker_port = port
         self.fluid.shaker.connect(self.fluid.shaker_port)
+        self.connection['shaker'] = True
     def connect_pump(self):
         port = self.set_pump.get()
         self.fluid.pump_port = port
         self.fluid.pump.connect(self.fluid.pump_port)
+        self.connection['pump'] = True
     def connect_mvp(self):
         port = self.set_mvp.get()
         self.fluid.mvp_port = port
         self.fluid.mvp.connect(self.fluid.mvp_port)
+        self.fluid.mvp.initialize()
+        self.connection['mvp'] = True
+
+
+'''
+    Wrapper Class to control devices through Exseq GUI
+'''
+class DeviceControl(tk.Frame):
+    def __init__(self,fluids:Fluidics,connection:DeviceConnection,root):
+        super().__init__(root)
+        self.fluidics = fluids
+        self.connections = connection
+        self.valves = list(set(self.fluidics.cycle_id.keys()))
+        self.flowrate = tk.StringVar(value=str(0.33))
+        self.angle = tk.StringVar(value=str(45))
+        self.duration = tk.StringVar(value=str(0.075))
+        #Draw
+        # MVP
+        tk.Label(self,text="Control Devices").pack()
+        self.control_grid = tk.Frame(self)
+        tk.Label(self.control_grid,text="Control MVP:").grid(
+            row=0,column=0,sticky='w'
+        )
+        self.choose_valve = ttk.Combobox(self.control_grid,values=self.valves,width=5)
+        self.choose_valve.set(self.valves[0])
+        self.choose_valve.grid(row=0,column=1)
+        tk.Button(self.control_grid,text='Change',command=self.change_valve).grid(
+            row=0,column=2,pady=2
+        )
+        # Pump
+        tk.Label(self.control_grid,text="Control Pump:").grid(
+            row=1,column=0,sticky='w',pady=5
+        )
+        tk.Entry(self.control_grid,textvariable=self.flowrate,width=6).grid(
+            row=1,column=1,pady=2
+        )
+        tk.Label(self.control_grid,text='(ml/min)').grid(
+            row=1,column=2,pady=2
+        )
+        tk.Button(self.control_grid,text="Pump",command=self.push).grid(
+            row=2,column=1,sticky='e',pady=2
+        )
+        tk.Button(self.control_grid,text="Stop",command=self.stop_pump).grid(
+            row=2,column=2,pady=2
+        )
+        #Shaker
+        tk.Label(self.control_grid,text="Control Shaker:").grid(
+            row=3,column=0,sticky='w',pady=5
+        )
+        tk.Entry(self.control_grid,textvariable=self.duration,width=6).grid(
+            row=3,column=1,pady=2
+        )
+        tk.Label(self.control_grid,text="(s)").grid(
+            row=3,column=2,sticky='w',pady=2
+        )
+        tk.Entry(self.control_grid,textvariable=self.angle,width=5).grid(
+            row=4,column=1,pady=2
+        )
+        tk.Label(self.control_grid,text="degrees").grid(
+            row=4,column=2, sticky='w',pady=2
+        )
+        tk.Button(self.control_grid,text="Go to",command=self.goto_angle).grid(
+            row=4,column=0,sticky='e',pady=2
+        )
+        self.control_grid.pack()
+
+    def change_valve(self):
+        if self.connections.connection['mvp']:
+            valve = int(self.choose_valve.get())
+            change_valve_pos(
+                self.fluidics.mvp,
+                0,valve
+            )
+        else:
+            print('mvp not connected')
+    def push(self):
+        if self.connections.connection['pump']:
+            flowrate = float(self.flowrate.get())
+            self.fluidics.pump.set_speed(
+                self.fluidics.set_flowrate(flowrate=flowrate)
+            )
+            self.fluidics.pump.push()
+        else:
+            print('pump not connected')
+    def stop_pump(self):
+        if self.connections.connection['pump']:
+            self.fluidics.pump.stop()
+        else:
+            print('pump not connected unplug to stop')
+    def goto_angle(self):
+        if self.connections.connection['shaker']:
+            duration = float(self.duration.get())
+            angle = float(self.angle.get())
+            self.fluidics.shaker.set_servo_duration(duration)
+            self.fluidics.shaker.move_servo(angle)
+        else:
+            print('shaker not connected')
+
+
         
-
-
-    
-class DeviceControl:
-    def __init__(self,fluids):
-        pass
 
 '''
     Class to Choose Imaging Protocol
@@ -115,7 +216,7 @@ class Protocol(tk.Frame):
         self.protocols = config['protocols']
         # #draw
         tk.Label(self,text="Choose Protocol").pack(padx=5)
-        self.protocol = ttk.Combobox(self,values = self.protocols)
+        self.protocol = ttk.Combobox(self,values = self.protocols,width=20)
         self.protocol.set(self.protocols[0] if len(self.protocols) > 0 else 'No Protocol')
         self.protocol.pack(padx=5)
     def run(self):
@@ -127,16 +228,18 @@ class Protocol(tk.Frame):
 class Exseq_GUI():
     def __init__(self,root,*,config_path = './config/config.yaml'):
         self.root = root
-        self.shape = (650,400)
+        self.shape = (660,400)
         self.root.geometry(f'{self.shape[0]}x{self.shape[1]}')
+        self.root.title('Exseq Control')
         self.fluidics = Fluidics(config_path=config_path)
         self.exseq_thread = Thread(target=self.__run,args=(None,None))
         self.stop = False
         #User Interface
-        self.fluid_frame = Fluidics_Frame(self.fluidics)
+        self.fluid_frame = Fluidics_Frame(self.fluidics,root)
         self.connection = DeviceConnection(self.fluidics,root)
         self.run_frame = tk.Frame(self.root)
         self.protocol = Protocol(self.fluidics._config,self.run_frame)
+        self.control = DeviceControl(self.fluidics,self.connection,self.root)
         self.fluid_frame.grid(
             row=0,
             column=0
@@ -149,7 +252,7 @@ class Exseq_GUI():
         self.protocol.pack(
             side=tk.TOP
         )
-
+        self.control.grid(row=0,column=1,padx=5,pady=5,sticky='n')
         self.run = tk.Button(self.run_frame,text="Run Exseq",command=self.run_exseq,bg="#26ad0a")
         self.run.pack(
             side=tk.LEFT,
@@ -157,7 +260,7 @@ class Exseq_GUI():
         )
         self.kill = tk.Button(self.run_frame,text="Stop Exseq",command=self.cancel,bg="#d11a17")
         self.kill.pack(side=tk.LEFT,pady=5)
-        self.run_frame.grid(row=1,column=1,padx=10)
+        self.run_frame.grid(row=1,column=1,padx=10,pady=10,sticky='n')
     def cancel(self):
         self.stop = True
     def __run(self,speeds,skips):
