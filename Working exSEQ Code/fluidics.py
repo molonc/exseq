@@ -72,9 +72,10 @@ class Fluidics:
             3:"Ligation Solution",
             4:"Imaging Buffer"           
         }
-        self.id_cycle = {
+        self.id_valve = {
             "Stripping Solution":6,
             "PBST Long":5,
+            "PBST Short":5,
             "PBS":0,
             "Hybridization":1,
             "Ligation Buffer":2,
