@@ -6,11 +6,11 @@ from gsioc import GSIOC
 import tkinter as tk
 from tkinter import ttk
 from GUI import DropdownDialog,list_available_com_ports,ExperimentalInfoDialog
-from fusionrest import run, get_state
+from fusionrest import run, get_state,stop,ApiError
 from time import sleep
 from threading import Thread
 from enum import Enum
-
+from requests.exceptions import ConnectionError
 '''
     Frame for holding all the values associated with the fluidics system
     Set flowrates which stages to skip etc...
@@ -224,6 +224,14 @@ class Protocol(tk.Frame):
         run(protocol)
     def is_running(self):
         return get_state() == 'running'
+    def stop(self):
+        stop()
+    def is_connected(self):
+        try:
+            s = self.is_running() 
+        except (ConnectionError,ApiError) as e:
+            return False
+        return True
 
 class Exseq_GUI():
     def __init__(self,root,*,config_path = './config/config.yaml'):
@@ -262,7 +270,17 @@ class Exseq_GUI():
         self.kill.pack(side=tk.LEFT,pady=5)
         self.run_frame.grid(row=1,column=1,padx=10,pady=10,sticky='n')
     def cancel(self):
+        #Will kill code executing
         self.stop = True
+        if self.connection.connection['pump']:
+            self.control.stop_pump()
+        #If running imaging kill imaging
+        if self.protocol.is_connected() and \
+            self.protocol.is_running(): self.protocol.stop()
+        
+    # Function to run imaging and fluidics rounds of exseq
+    # This function should be run in a seperate thread to the gui
+    #So the gui remains responsive
     def __run(self,speeds,skips):
         if speeds and skips:
             for i,(speed,skip,stage) in \
@@ -297,6 +315,9 @@ class Exseq_GUI():
    
 
 if  __name__ == "__main__":
+    import os
+    os.chdir('Working exSEQ Code')
     root = tk.Tk()
     exseq = Exseq_GUI(root)
     exseq.root.mainloop()
+    os.chdir('..')
