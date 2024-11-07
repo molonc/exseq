@@ -15,9 +15,12 @@ from requests.exceptions import ConnectionError
     Frame for holding all the values associated with the fluidics system
     Set flowrates which stages to skip etc...
 '''
-class Fluidics_Frame(tk.Frame):
+class Fluidics_Frame(ttk.LabelFrame):
     def __init__(self,fluids:Fluidics,root):
         super().__init__(root)
+        self['text'] = 'Fluid Settings'
+
+
         self.fluids:Fluidics = fluids
 
         self.speed_frame = tk.Frame(self)
@@ -56,9 +59,11 @@ class Fluidics_Frame(tk.Frame):
     Any new devices need driver code then they should be 
     added here
 '''  
-class DeviceConnection(tk.Frame):
+class DeviceConnection(ttk.LabelFrame):
     def __init__(self,fluidics,root):
         super().__init__(root)
+        self['text'] = 'Device Connect'
+
         self.connection = {
             'pump':False,
             'mvp':False,
@@ -111,9 +116,12 @@ class DeviceConnection(tk.Frame):
 '''
     Wrapper Class to control devices through Exseq GUI
 '''
-class DeviceControl(tk.Frame):
+class DeviceControl(ttk.LabelFrame):
     def __init__(self,fluids:Fluidics,connection:DeviceConnection,root):
         super().__init__(root)
+        self['text'] = 'Device Control'
+
+
         self.fluidics = fluids
         self.connections = connection
         self.valves = list(set(self.fluidics.cycle_id.keys()))
@@ -156,13 +164,13 @@ class DeviceControl(tk.Frame):
         tk.Entry(self.control_grid,textvariable=self.duration,width=6).grid(
             row=3,column=1,pady=2
         )
-        tk.Label(self.control_grid,text="(s)").grid(
+        tk.Label(self.control_grid,text="(s/degree)").grid(
             row=3,column=2,sticky='w',pady=2
         )
         tk.Entry(self.control_grid,textvariable=self.angle,width=5).grid(
             row=4,column=1,pady=2
         )
-        tk.Label(self.control_grid,text="degrees").grid(
+        tk.Label(self.control_grid,text="(degrees)").grid(
             row=4,column=2, sticky='w',pady=2
         )
         tk.Button(self.control_grid,text="Go to",command=self.goto_angle).grid(
@@ -213,6 +221,7 @@ class Protocol(tk.Frame):
     def __init__(self,config,root):
         super().__init__(root)
 
+
         self.protocols = config['protocols']
         # #draw
         tk.Label(self,text="Choose Protocol").pack(padx=5)
@@ -236,7 +245,7 @@ class Protocol(tk.Frame):
 class Exseq_GUI():
     def __init__(self,root,*,config_path = './config/config.yaml'):
         self.root = root
-        self.shape = (660,400)
+        self.shape = (700,400)
         self.root.geometry(f'{self.shape[0]}x{self.shape[1]}')
         self.root.title('Exseq Control')
         self.fluidics = Fluidics(config_path=config_path)
@@ -250,17 +259,21 @@ class Exseq_GUI():
         self.control = DeviceControl(self.fluidics,self.connection,self.root)
         self.fluid_frame.grid(
             row=0,
-            column=0
+            column=0,
+            padx=5,
+            pady=5
         )
         self.connection.grid(
             row = 1,
             column = 0,
-            pady = 10
+            pady = 5,
+            sticky='nsew',
+            padx=5
         )
         self.protocol.pack(
             side=tk.TOP
         )
-        self.control.grid(row=0,column=1,padx=5,pady=5,sticky='n')
+        self.control.grid(row=0,column=1,padx=5,pady=5,sticky='nsew')
         self.run = tk.Button(self.run_frame,text="Run Exseq",command=self.run_exseq,bg="#26ad0a")
         self.run.pack(
             side=tk.LEFT,
@@ -268,7 +281,7 @@ class Exseq_GUI():
         )
         self.kill = tk.Button(self.run_frame,text="Stop Exseq",command=self.cancel,bg="#d11a17")
         self.kill.pack(side=tk.LEFT,pady=5)
-        self.run_frame.grid(row=1,column=1,padx=10,pady=10,sticky='n')
+        self.run_frame.grid(row=1,column=1,padx=10,pady=10,sticky='s')
     def cancel(self):
         #Will kill code executing
         self.stop = True
