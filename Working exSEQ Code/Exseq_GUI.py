@@ -135,8 +135,8 @@ class DeviceControl(ttk.LabelFrame):
         tk.Label(self.control_grid,text="Control MVP:").grid(
             row=0,column=0,sticky='w'
         )
-        self.choose_valve = ttk.Combobox(self.control_grid,values=self.valves,width=5)
-        self.choose_valve.set(self.valves[0])
+        self.choose_valve = ttk.Combobox(self.control_grid,values=[valve + 1 for valve in self.valves],width=5)
+        self.choose_valve.set(self.valves[0] + 1)
         self.choose_valve.grid(row=0,column=1)
         tk.Button(self.control_grid,text='Change',command=self.change_valve).grid(
             row=0,column=2,pady=2
@@ -193,7 +193,7 @@ class DeviceControl(ttk.LabelFrame):
             self.fluidics.pump.set_speed(
                 self.fluidics.set_flowrate(flowrate=flowrate)
             )
-            self.fluidics.pump.push()
+            self.fluidics.pump.push(self.fluidics.set_flowrate(flowrate=flowrate))
         else:
             print('pump not connected')
     def stop_pump(self):
@@ -245,7 +245,7 @@ class Protocol(tk.Frame):
 class Exseq_GUI():
     def __init__(self,root,*,config_path = './config/config.yaml'):
         self.root = root
-        self.shape = (700,400)
+        self.shape = (600,450)
         self.root.geometry(f'{self.shape[0]}x{self.shape[1]}')
         self.root.title('Exseq Control')
         self.fluidics = Fluidics(config_path=config_path)
@@ -277,10 +277,10 @@ class Exseq_GUI():
         self.run = tk.Button(self.run_frame,text="Run Exseq",command=self.run_exseq,bg="#26ad0a")
         self.run.pack(
             side=tk.LEFT,
-            pady = 5,
+            pady = 5,padx=5
         )
         self.kill = tk.Button(self.run_frame,text="Stop Exseq",command=self.cancel,bg="#d11a17")
-        self.kill.pack(side=tk.LEFT,pady=5)
+        self.kill.pack(side=tk.LEFT,pady=5,padx=5)
         self.run_frame.grid(row=1,column=1,padx=10,pady=10,sticky='s')
     def cancel(self):
         #Will kill code executing
