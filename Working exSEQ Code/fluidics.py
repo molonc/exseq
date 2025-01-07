@@ -23,6 +23,160 @@ import serial
 # ser = serial.Serial(com_port, baudrate=9600)
 
 
+<<<<<<< Updated upstream
+=======
+'''
+Small enumeration for all of our buffers
+'''
+class Buffer(IntEnum):
+    STRIPPING = 6
+    PBST_SHORT = 5
+    PBS = 0
+    HYBRIDIZATION = 1
+    LIGATION_BUFFER = 2
+    LIGATION_SOLUTION = 3
+    PBST_LONG = 5
+    IMAGING = 4
+
+'''
+    Encapsulates  Fluidics functions for Exseq Experiment: 
+    @params config_path = path to config file
+    @process
+    - set_flowrate: flowrate -> rpm mapping
+    - run_fluidics_round -> runs all buffers 
+'''
+class Fluidics:
+    def __init__(self,*, config_path = './config/config.yaml',optimal_volume = -1) -> None:
+        
+        self._config = getConfig(path = config_path)
+        self.pump = GSIOC()
+        self.mvp = MVP()
+        self.shaker = Shaker()
+
+ 
+        self.pump_port = self._config['pump port']
+        self.mvp_port = self._config['mvp port']
+        self.shaker_port = self._config['shaker port']
+
+        self.optimal_volume = self._config['optimal volume'] if optimal_volume == -1 else optimal_volume # optimal volume to clear chamber
+
+        #mapping from mvp valve position to round name
+        self.cycle_id = {
+            6:"Stripping Solution",
+            5:"PBST Long",
+            0:"PBS",
+            1:"Hybridization",
+            2:"Ligation Buffer",
+            3:"Ligation Solution",
+            4:"Imaging Buffer"           
+        }
+        self.id_valve = {
+            "Stripping Solution":6,
+            "PBST Long":5,
+            "PBST Short":5,
+            "PBS":0,
+            "Hybridization":1,
+            "Ligation Buffer":2,
+            "Ligation Solution":3,
+            "Imaging Buffer":4   
+        }
+        self.optimal_flowrate = self._config['speeds']
+        self.max_flowrate = self._config['max flowrate']
+
+        self.stage_durations =  self._config['stage durations']
+        self.shaker_duration = self._config['shaker duration']
+    def connect(self):
+        self.pump.connect(self.pump_port)
+        self.shaker.connect(self.shaker_port)
+        self.mvp.connect(self.mvp_port)
+        self.mvp.initialize()
+        sleep(5) #wait for pump *protocol doesn't awk*
+    #@param flowrate: in ml/min
+    def set_flowrate(self,flowrate):
+        return round(flowrate*68.571) 
+    
+    '''
+        Pushes 1 buffer through chamber then pushes air right after
+        @params: 
+        - buffer: buffer id or mvp valve position - 1;  best to use Buffer enum
+        - shake: whether the chamber should be shaken after fluidics rounds
+        - volume: desired volume to push
+        - air_valve: which position on the mvp is connected to air
+        - vent: if air should be pushed after the buffer (smae volume pushed)
+    '''
+    def _push_buffer(self,buffer:int,shake:bool = False,volume:int = -1,vent:bool = True,air_valve:int = 0):
+        self.shaker.move_servo(45)
+        change_valve_pos(self.mvp,0, (buffer % 8)) # out of bounds protection valve goes from 1-8
+
+        flowrate = self.optimal_flowrate[self.cycle_id[buffer]] #optimal flowrate for that buffer
+
+        # calculates as optimal_volume / buffer max speed * 60
+        #volume is in 10* ul and flowrate is in 10* ul/min * 100)
+        vol = volume if volume != -1 else self.optimal_volume
+        push_duration = 60 * (vol / (flowrate * 100))
+
+        sleep(2)
+        start = time()
+        self.pump.push(self.set_flowrate(flowrate) *100)
+        sleep(push_duration)
+        self.pump.stop()
+
+        #shakes coverslip to avoid bubbles?  only for 3 cycles
+        if shake:
+            start = time()
+            while time() - start <= self.shaker_duration:
+                self.shaker.move_servo(135)
+                sleep(0.5)
+                self.shaker.move_servo(45)
+                sleep(2)
+            self.shaker.move_servo(90)
+        
+        if vent:
+            assert air_valve <= 8 and "Illegal valve number"
+            change_valve_pos(self.mvp,0, air_valve) 
+            sleep(2)
+            start = time()
+            self.pump.push(self.set_flowrate(flowrate) *100)
+            sleep(push_duration)
+            self.pump.stop()
+
+        
+    
+    #run full round of buffers
+    def run_fluidics_round(self):
+        for buffer in Buffer:
+            
+            if buffer == Buffer.STRIPPING or \
+            buffer == Buffer.PBST_LONG or \
+            buffer == Buffer.PBST_SHORT: # shake these buffers 
+                self._push_buffer(buffer.value,shake = True)
+            else: self._push_buffer(buffer.value,shake = False)
+
+    
+    
+    #tests every buffer in our system
+    @staticmethod
+    def test_system(fluid_system):
+        for buffer in Buffer:
+
+            if buffer == Buffer.STRIPPING or \
+            buffer == Buffer.PBST_LONG or buffer == Buffer.PBST_SHORT:
+                fluid_system._push_buffer(buffer.value,shake = True)
+
+            else: fluid_system._push_buffer(buffer.value,shake = False)
+
+
+    
+
+
+
+
+
+'''
+Legacy verbatim translation from boydens lab matlab code into python 
+'''
+
+>>>>>>> Stashed changes
 #this is to make it so we dont need to change a bunch of code
 global ser
 global shaker_pause # This is how we know how long to wait for the servo to move to the desired angle
