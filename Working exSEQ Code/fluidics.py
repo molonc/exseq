@@ -1,8 +1,11 @@
-import time
-import mvp
-import gsioc
+from time import sleep
 import datetime
 import GUI
+from mvp import change_valve_pos, MVP
+from config.config import setConfig, getConfig
+from gsioc import GSIOC
+from shaker import Shaker
+from enum import IntEnum
 # from pyfirmata import Arduino, SERVO
 from threading import Timer
 import threading
@@ -23,8 +26,6 @@ import serial
 # ser = serial.Serial(com_port, baudrate=9600)
 
 
-<<<<<<< Updated upstream
-=======
 '''
 Small enumeration for all of our buffers
 '''
@@ -176,7 +177,6 @@ class Fluidics:
 Legacy verbatim translation from boydens lab matlab code into python 
 '''
 
->>>>>>> Stashed changes
 #this is to make it so we dont need to change a bunch of code
 global ser
 global shaker_pause # This is how we know how long to wait for the servo to move to the desired angle
