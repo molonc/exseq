@@ -1,4 +1,6 @@
-from time import sleep
+import gsioc
+import mvp
+from time import sleep, time
 import datetime
 import GUI
 from mvp import change_valve_pos, MVP
@@ -115,12 +117,21 @@ class Fluidics:
         #volume is in 10* ul and flowrate is in 10* ul/min * 100)
         vol = volume if volume != -1 else self.optimal_volume
         push_duration = 60 * (vol / (flowrate * 100))
-
         sleep(2)
         start = time()
         self.pump.push(self.set_flowrate(flowrate) *100)
         sleep(push_duration)
         self.pump.stop()
+        if vent:
+            assert air_valve < 8 and "Illegal valve number"
+            self.shaker.move_servo(135)
+            change_valve_pos(self.mvp,0, air_valve) 
+            sleep(2)
+            start = time()
+            self.pump.push(self.set_flowrate(flowrate) *100)
+            sleep(push_duration)
+            self.pump.stop()
+
 
         #shakes coverslip to avoid bubbles?  only for 3 cycles
         if shake:
@@ -132,14 +143,7 @@ class Fluidics:
                 sleep(2)
             self.shaker.move_servo(90)
         
-        if vent:
-            assert air_valve <= 8 and "Illegal valve number"
-            change_valve_pos(self.mvp,0, air_valve) 
-            sleep(2)
-            start = time()
-            self.pump.push(self.set_flowrate(flowrate) *100)
-            sleep(push_duration)
-            self.pump.stop()
+
 
         
     
