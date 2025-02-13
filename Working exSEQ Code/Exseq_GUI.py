@@ -31,14 +31,10 @@ class Fluidics_Frame(ttk.LabelFrame):
         for i,stage in enumerate(self.fluids.optimal_flowrate.keys()):
             mapping = self.fluids.optimal_flowrate[stage]
             strvar = tk.StringVar(
-                value=str(round(
-                    self.fluids.rpm2flowrate(
-                        self.fluids.speeds[2],
-                        mapping['m'],mapping['b']
-                    ),4)
-                )
+                value=str(2)
+                
              )
-            tk.Label(self.speed_frame,text=f"{stage} (ml/min)").grid(
+            tk.Label(self.speed_frame,text=f"{stage} [0,1,2]").grid(
                 row=i,column=0,padx = 5,pady = 5, sticky = 'e'
             )
             self.entries[stage] = tk.Entry(self.speed_frame,textvariable=strvar)
@@ -251,7 +247,7 @@ class Protocol(tk.Frame):
         return True
 
 class Exseq_GUI():
-    def __init__(self,root,*,config_path = './config/config.yaml'):
+    def __init__(self,root,*,config_path = './config/config.yaml',simulate:bool = False):
         self.root = root
         self.shape = (750,400)
         self.root.geometry(f'{self.shape[0]}x{self.shape[1]}')
@@ -259,6 +255,7 @@ class Exseq_GUI():
         self.fluidics = Fluidics(config_path=config_path)
         self.exseq_thread = None
         self.stop = True
+        self.sim = simulate
         #User Interface
         self.fluid_frame = Fluidics_Frame(self.fluidics,root)
         self.connection = DeviceConnection(self.fluidics,root)
@@ -292,6 +289,13 @@ class Exseq_GUI():
         self.bench = tk.Button(self.run_frame,text="On Bench",command=self.on_bench,bg="#26ad0a")
         self.bench.pack(side=tk.LEFT,padx=5)
         self.run_frame.grid(row=1,column=1,padx=10,pady=10,sticky='s')
+
+    '''
+        E-stop function:
+        will kill any thread executing the imaging or fluidics protocol
+        will also stop the pump if it is running 
+        will stop imaging if it is running
+    '''
     def cancel(self):
         #Will kill code executing
         self.stop = True
@@ -300,8 +304,19 @@ class Exseq_GUI():
         #If running imaging kill imaging
         if self.protocol.is_connected() and \
             self.protocol.is_running(): self.protocol.stop()
-    def _on_bench(self):
+        
+    '''
+        These functions interact with the fluidics object to run different fluidics rounds
+        They are protected and should not be called outside this class
+    ''' 
+
+    '''
+        on bench runs Steps 9 and 10 of exseq.
+        it pushes each buffer and then air
+    '''
+    def __on_bench(self):
         #bench protocol defined in https://docs.google.com/presentation/d/17UVYqIIF_az_IiftN8ygVcyMJdWzFXmNhw3-oyN88vs/edit#slide=id.g32b88c2b297_0_0
+        # slide 2
         buffers = [
             Buffer.TDT_PRE,Buffer.TDT_REACT,Buffer.PBS,
             Buffer.HYBRIDIZATION,Buffer.SSC,Buffer.PR2
@@ -315,61 +330,114 @@ class Exseq_GUI():
         for i,buffer in enumerate(buffers):
             if not self.stop:
                 for _ in range(repeats[i]):
-                    # self.fluidics.push_buffer_bench(
-                    #     buffer.value,durations[i],speed=2
-                    # )
-                    # sleep(2)
-                    print(buffer,durations[i])
+                    if not self.sim:
+                        self.fluidics.push_buffer_bench(
+                            buffer.value,durations[i],speed=2
+                        )
+
+                    print(buffer.name,durations[i])
                     sleep(0.1)
         self.bench['state'] = tk.NORMAL
         self.bench.config(text="On Bench")
         self.root.update()
         self.stop = True
-    def on_bench(self):
-        self.bench["state"] = tk.DISABLED
-        self.bench.config(text = "Running...")   
-        self.root.update()
-        if self.stop:
-            self.exseq_thread = Thread(target=self._on_bench)
-            self.stop = False
-            self.exseq_thread.start()
-        else:
-            print("Thread is running command already Please Stop thread!")
+    '''
+        on scope runs optionally step 14 and then step 12,13
+        it pushes each buffer back to back
+    '''
+    def __on_scope(self,cleavage = False):
+        #on scope defined in https://docs.google.com/presentation/d/17UVYqIIF_az_IiftN8ygVcyMJdWzFXmNhw3-oyN88vs/edit#slide=id.g32b88c2b297_0_0
+        # slide 3 on
+        print('running fluidics')
 
 
-    #TODO FIll in protocol
-    # Function to run imaging and fluidics rounds of exseq
-    # This function should be run in a seperate thread to the gui
-    #So the gui remains responsive
-    def __run(self,speeds,skips):
-        if speeds and skips:
-            for i,(speed,skip,stage) in \
-                enumerate(zip(speeds,skips,self.fluidics.optimal_flowrate.keys())):
-                if not self.stop:
-                #Imaging
-                #run protocol
-                
-                #while protocol.is_running sleep
-                
+        #buffers used for fluidics round
+        buffers = [
+            Buffer.ISS,Buffer.ISS,Buffer.ZW_PR,Buffer.DAPI,Buffer.PR2, #step 12
+            Buffer.IMAGING #Step 13
+        ]
+        repeats = [2,1,2,1,1,2]
+        durations = [15*60,25*60,15*60,15*60,15*60,15*60]
+
+        
+        if cleavage:
+            #Cleavage data
+            cms_buffers = [
+                Buffer.PR2,Buffer.CLEAVAGE,Buffer.CLEAVAGE,Buffer.PR2,Buffer.PR2
+            ]
+            cms_repeats = [2,2,1,2,2]
+            cms_durations = [10*60,10*60,20*60,10*60,10*60]
+            #update buffers with cleavage data
+            buffers = cms_buffers + buffers
+            repeats = cms_repeats + repeats
+            durations = cms_durations + durations
+        
+        for i, buffer in enumerate(buffers):
+            if not self.stop:
+                for _ in range(repeats[i]):
+                    print(buffer.name,durations[i])
+                    sleep(0.1)
+                    if not self.sim:
+                        self.fluidics.push_buffer_scope(buffer.value,durations[i])
+
+
+
+    '''
+        Functions to run all rounds of exseq
+    '''
+    def __exseq(self,speeds,skips,rounds):
+        print("running")
+        #prepare for imaging
+        self.__on_scope(cleavage=False)
+        for i in range(rounds):
+            if not self.stop:
+                # Imaging
+                if not self.sim:
+                    assert self.protocol.is_connected() and  "Protocol is not\
+                        connected!"
+                    self.protocol.run()
+                    sleep(2)
+                    while self.protocol.is_running():
+                        sleep(5)
+                else:
+                    
+                    print(f"Imaging {self.protocol.protocol.get()}")
+                    sleep(1)
+                    
                 #Fluidics
-                    if not skip:
-                        print(stage,self.fluidics.id_valve[stage],i,speed)
-                    sleep(10/7) #for testing remove later!!!
+                self.__on_scope(cleavage=True)
+
+
         self.run["state"] = tk.NORMAL
         self.run["text"] = "Run Exseq"
         self.root.update()
         self.stop = True
 
-
+    #Kick off exseq thread so gui remains responsive
+    def on_bench(self):
+        self.bench["state"] = tk.DISABLED
+        self.bench.config(text = "Running...")   
+        self.root.update()
+        if self.stop:
+            self.exseq_thread = Thread(target=self.__on_bench)
+            self.stop = False
+            self.exseq_thread.start()
+        else:
+            print("Thread is running command already Please Stop thread!")
     def run_exseq(self):
         info = ExperimentalInfoDialog(self.root,"Experimental info").result
         speeds = [float(self.fluid_frame.entries[var].get()) for var in self.fluid_frame.entries]
         skips = [bool(self.fluid_frame.skips[var].get()) for var in self.fluid_frame.skips] 
+        print(speeds,skips)
         self.run["state"] = tk.DISABLED
         self.run.config(text="Running...")
         self.root.update()
-        self.exseq_thread = Thread(target=self.__run,args=(speeds,skips))
-        self.exseq_thread.start()
+        if self.stop:
+            self.stop = False
+            self.exseq_thread = Thread(target=self.__exseq,args=(speeds,skips,8))
+            self.exseq_thread.start()
+        else:
+            print("Thread is already running make sure to stop thread!")
 
    
 
@@ -377,6 +445,6 @@ if  __name__ == "__main__":
     import os
     os.chdir('Working exSEQ Code')
     root = tk.Tk()
-    exseq = Exseq_GUI(root)
+    exseq = Exseq_GUI(root,simulate=True)
     exseq.root.mainloop()
     os.chdir('..')
