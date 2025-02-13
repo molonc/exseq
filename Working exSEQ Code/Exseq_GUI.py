@@ -249,7 +249,7 @@ class Exseq_GUI():
         self.root.geometry(f'{self.shape[0]}x{self.shape[1]}')
         self.root.title('Exseq Control')
         self.fluidics = Fluidics(config_path=config_path)
-        self.exseq_thread = Thread(target=self.__run,args=(None,None))
+        self.exseq_thread = None
         self.stop = False
         #User Interface
         self.fluid_frame = Fluidics_Frame(self.fluidics,root)

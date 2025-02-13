@@ -149,13 +149,12 @@ class Fluidics:
     
     #run full round of buffers
     def run_fluidics_round(self):
-        for buffer in Buffer:
-            
-            if buffer == Buffer.STRIPPING or \
-            buffer == Buffer.PBST_LONG or \
-            buffer == Buffer.PBST_SHORT: # shake these buffers 
-                self._push_buffer(buffer.value,shake = True)
-            else: self._push_buffer(buffer.value,shake = False)
+        #Step 14
+        #Step 10
+        #Step 12
+        #Step 13
+        pass
+        
 
     
     
