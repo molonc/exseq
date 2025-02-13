@@ -29,7 +29,15 @@ class Fluidics_Frame(ttk.LabelFrame):
         self.entries = {}
         self.skips = {}
         for i,stage in enumerate(self.fluids.optimal_flowrate.keys()):
-            strvar = tk.StringVar(value=str(self.fluids.optimal_flowrate[stage]))
+            mapping = self.fluids.optimal_flowrate[stage]
+            strvar = tk.StringVar(
+                value=str(round(
+                    self.fluids.rpm2flowrate(
+                        self.fluids.speeds[2],
+                        mapping['m'],mapping['b']
+                    ),4)
+                )
+             )
             tk.Label(self.speed_frame,text=f"{stage} (ml/min)").grid(
                 row=i,column=0,padx = 5,pady = 5, sticky = 'e'
             )
@@ -276,11 +284,11 @@ class Exseq_GUI():
         self.control.grid(row=0,column=1,padx=5,pady=5,sticky='nsew')
         self.run = tk.Button(self.run_frame,text="Run Exseq",command=self.run_exseq,bg="#26ad0a")
         self.run.pack(
-            side=tk.LEFT,
+            side=tk.BOTTOM,
             pady = 5,
         )
         self.kill = tk.Button(self.run_frame,text="Stop Exseq",command=self.cancel,bg="#d11a17")
-        self.kill.pack(side=tk.LEFT,pady=5)
+        self.kill.pack(side=tk.BOTTOM,pady=5)
         self.run_frame.grid(row=1,column=1,padx=10,pady=10,sticky='s')
     def cancel(self):
         #Will kill code executing
@@ -291,10 +299,24 @@ class Exseq_GUI():
         if self.protocol.is_connected() and \
             self.protocol.is_running(): self.protocol.stop()
     def on_bench(self):
-        #Steps 9
-        #Step 10
+        #bench protocol defined in https://docs.google.com/presentation/d/17UVYqIIF_az_IiftN8ygVcyMJdWzFXmNhw3-oyN88vs/edit#slide=id.g32b88c2b297_0_0
+        buffers = [
+            Buffer.TDT_PRE,Buffer.TDT_REACT,Buffer.PBS,
+            Buffer.HYBRIDIZATION,Buffer.SSC,Buffer.PR2
+        ]
+        repeats = [1,1,3,1,3,3]
+        durations = [
+            20*60,90*60,10*60,
+            60*60,10*60,10*60
+        ]
+        for i,buffer in enumerate(buffers):
+            for _ in range(repeats[i]):
+                self.fluidics.push_buffer_bench(
+                    buffer.value,durations[i],speed=2
+                )
+                sleep(2)
         
-        pass
+        
     #TODO FIll in protocol
     # Function to run imaging and fluidics rounds of exseq
     # This function should be run in a seperate thread to the gui
