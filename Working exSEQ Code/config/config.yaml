@@ -1,17 +1,46 @@
+# Imaging protocols available in Fusion
 protocols: 
   - 'Hello world'
   - 'Goodbye World'
+
+
+
 #Fluid settings
-optimal volume: 650
+system volume: 200
+buffer:
+  Stripping Solution: 
+    m: 0.11599561
+    b: -0.0142795
+  PBST Short: 
+    m: 0.11599561
+    b: -0.0142795
+  PBS:
+    m: 0.11599561
+    b: -0.0142795
+  Hybridization: 
+    m: 0.11599561
+    b: -0.0142795
+  Ligation Buffer: 
+    m: 0.11599561
+    b: -0.0142795
+  Ligation Solution:
+    m: 0.11599561
+    b: -0.0142795
+  PBST Long: 
+    m: 0.11599561
+    b: -0.0142795
+  Imaging Buffer: 
+    m: 0.11599561
+    b: -0.0142795
+optimal volume:
+    m: 0.11599561
+    b: -0.0142795
+
 speeds:
-  Stripping Solution: 0.333
-  PBST Short: 0.333
-  PBS: 0.333
-  Hybridization: 0.333
-  Ligation Buffer: 0.333
-  Ligation Solution: 0.333
-  PBST Long: 0.333 
-  Imaging Buffer: 0.333
+- 5
+- 15 
+- 23
+
 
 time between stages: 1
 shaker duration: 0.075
@@ -26,15 +55,7 @@ skip stages:
   PBST Long: 1 
   Imaging Buffer: 1 
 
-max flowrate:
-  Stripping Solution: 750
-  PBST Short: 840
-  PBS: 840
-  Hybridization: 800
-  Ligation Buffer: 800
-  Ligation Solution: 800
-  PBST Long: 800
-  Imaging Buffer: 800 
+
 
 stage durations:
   Stripping Solution: 1
