@@ -118,7 +118,7 @@ class Fluidics:
         - air_valve: which position on the mvp is connected to air
     '''
     def push_buffer_bench(self,buffer:int,duration:int,speed:int=2,*
-                           ,shake:bool = True,air_valve:int = 0):
+                           ,air_valve:int = 0):
         
         #tilt so buffer enters through lower side of chamber
         self.shaker.move_servo(45)
