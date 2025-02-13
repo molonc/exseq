@@ -11,6 +11,7 @@ from time import sleep
 from threading import Thread
 from enum import Enum
 from requests.exceptions import ConnectionError
+from itertools import repeat
 '''
     Frame for holding all the values associated with the fluidics system
     Set flowrates which stages to skip etc...
@@ -31,13 +32,18 @@ class Fluidics_Frame(ttk.LabelFrame):
         for i,stage in enumerate(self.fluids.optimal_flowrate.keys()):
             mapping = self.fluids.optimal_flowrate[stage]
             strvar = tk.StringVar(
-                value=str(2)
+                value=str(self.fluids.optimal_flowrate[stage]['speed'])
                 
              )
             tk.Label(self.speed_frame,text=f"{stage} [0,1,2]").grid(
                 row=i,column=0,padx = 5,pady = 5, sticky = 'e'
             )
-            self.entries[stage] = tk.Entry(self.speed_frame,textvariable=strvar)
+            cmd = (self.speed_frame.register(self.validate),'%P','%d')
+            self.entries[stage] = tk.Entry(
+                self.speed_frame,
+                textvariable=strvar,validate='all',
+                validatecommand=cmd,
+            )
             self.entries[stage].grid(
                 row=i,column=1,padx = 5,pady = 5
             )
@@ -50,6 +56,14 @@ class Fluidics_Frame(ttk.LabelFrame):
             ).grid(row=i,column=3,padx=5)
         tk.Label(self,text = "Flowrate Settings").pack(side=tk.TOP)
         self.speed_frame.pack()
+
+
+    def validate(self,accept_type,action):
+        if action == '1':
+            if accept_type not in [str(i) for i in range(len(self.fluids.speeds))]:
+                print('invalid')
+                return False
+        return True
 
     def update_entries(self):
         for stage in self.fluids.optimal_flowrate.keys():
@@ -249,10 +263,12 @@ class Protocol(tk.Frame):
 class Exseq_GUI():
     def __init__(self,root,*,config_path = './config/config.yaml',simulate:bool = False):
         self.root = root
-        self.shape = (750,400)
+        self.shape = (750,500)
         self.root.geometry(f'{self.shape[0]}x{self.shape[1]}')
         self.root.title('Exseq Control')
         self.fluidics = Fluidics(config_path=config_path)
+        self.speed_setpoints = None
+        self.skips = None
         self.exseq_thread = None
         self.stop = True
         self.sim = simulate
@@ -304,6 +320,19 @@ class Exseq_GUI():
         #If running imaging kill imaging
         if self.protocol.is_connected() and \
             self.protocol.is_running(): self.protocol.stop()
+    def get_speed(self,buffer:Buffer) -> int:
+        speed = 0
+        try: speed = self.fluid_frame.entries[buffer.name.lower()].get()
+        except KeyError: 
+            print(f"{buffer.name.lower()} not in speed entries")
+            return -2
+
+        try: speed = int(speed)
+        except ValueError: 
+            print(f"{buffer.name.lower()} speed entry is empty!")
+            return -1
+
+        return speed
         
     '''
         These functions interact with the fluidics object to run different fluidics rounds
@@ -317,6 +346,7 @@ class Exseq_GUI():
     def __on_bench(self):
         #bench protocol defined in https://docs.google.com/presentation/d/17UVYqIIF_az_IiftN8ygVcyMJdWzFXmNhw3-oyN88vs/edit#slide=id.g32b88c2b297_0_0
         # slide 2
+        
         buffers = [
             Buffer.TDT_PRE,Buffer.TDT_REACT,Buffer.PBS,
             Buffer.HYBRIDIZATION,Buffer.SSC,Buffer.PR2
@@ -330,12 +360,15 @@ class Exseq_GUI():
         for i,buffer in enumerate(buffers):
             if not self.stop:
                 for _ in range(repeats[i]):
+                    speed = self.get_speed(buffer)
+                    if speed < 0: self.cancel()
                     if not self.sim:
                         self.fluidics.push_buffer_bench(
-                            buffer.value,durations[i],speed=2
+                            buffer.value,durations[i],speed=speed
                         )
 
-                    print(buffer.name,durations[i])
+
+                    print(buffer.name,durations[i],speed)
                     sleep(0.1)
         self.bench['state'] = tk.NORMAL
         self.bench.config(text="On Bench")
@@ -349,7 +382,6 @@ class Exseq_GUI():
         #on scope defined in https://docs.google.com/presentation/d/17UVYqIIF_az_IiftN8ygVcyMJdWzFXmNhw3-oyN88vs/edit#slide=id.g32b88c2b297_0_0
         # slide 3 on
         print('running fluidics')
-
 
         #buffers used for fluidics round
         buffers = [
@@ -375,17 +407,20 @@ class Exseq_GUI():
         for i, buffer in enumerate(buffers):
             if not self.stop:
                 for _ in range(repeats[i]):
-                    print(buffer.name,durations[i])
+                    speed = self.get_speed(buffer)
+                    if speed < 0: self.cancel()  
+                    print(buffer.name,durations[i],speed)
                     sleep(0.1)
+
                     if not self.sim:
-                        self.fluidics.push_buffer_scope(buffer.value,durations[i])
+                        self.fluidics.push_buffer_scope(buffer.value,durations[i],speed=speed)
 
 
 
     '''
         Functions to run all rounds of exseq
     '''
-    def __exseq(self,speeds,skips,rounds):
+    def __exseq(self,rounds):
         print("running")
         #prepare for imaging
         self.__on_scope(cleavage=False)
@@ -426,15 +461,12 @@ class Exseq_GUI():
             print("Thread is running command already Please Stop thread!")
     def run_exseq(self):
         info = ExperimentalInfoDialog(self.root,"Experimental info").result
-        speeds = [float(self.fluid_frame.entries[var].get()) for var in self.fluid_frame.entries]
-        skips = [bool(self.fluid_frame.skips[var].get()) for var in self.fluid_frame.skips] 
-        print(speeds,skips)
         self.run["state"] = tk.DISABLED
         self.run.config(text="Running...")
         self.root.update()
         if self.stop:
             self.stop = False
-            self.exseq_thread = Thread(target=self.__exseq,args=(speeds,skips,8))
+            self.exseq_thread = Thread(target=self.__exseq,args=[8])
             self.exseq_thread.start()
         else:
             print("Thread is already running make sure to stop thread!")
