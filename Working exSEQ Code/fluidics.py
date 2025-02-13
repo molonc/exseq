@@ -1,17 +1,10 @@
-import gsioc
-import mvp
 from time import sleep, time
-import datetime
-import GUI
 from mvp import change_valve_pos, MVP
-from config.config import setConfig, getConfig
+from config.config import  getConfig
 from gsioc import GSIOC
 from shaker import Shaker
 from enum import IntEnum
-# from pyfirmata import Arduino, SERVO
-from threading import Timer
-import threading
-import serial
+
 # MVP1:
 #   - 1 1* PBS
 #   - 2 Hydrbidization Solution
