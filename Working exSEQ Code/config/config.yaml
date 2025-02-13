@@ -1,0 +1,54 @@
+protocols: 
+  - 'Hello world'
+  - 'Goodbye World'
+#Fluid settings
+optimal volume: 650
+speeds:
+  Stripping Solution: 0.333
+  PBST Short: 0.333
+  PBS: 0.333
+  Hybridization: 0.333
+  Ligation Buffer: 0.333
+  Ligation Solution: 0.333
+  PBST Long: 0.333 
+  Imaging Buffer: 0.333
+
+time between stages: 1
+shaker duration: 0.075
+
+skip stages:
+  Stripping Solution: 1
+  PBST Short: 1
+  PBS: 1
+  Hybridization: 1
+  Ligation Buffer: 1
+  Ligation Solution: 1
+  PBST Long: 1 
+  Imaging Buffer: 1 
+
+max flowrate:
+  Stripping Solution: 750
+  PBST Short: 840
+  PBS: 840
+  Hybridization: 800
+  Ligation Buffer: 800
+  Ligation Solution: 800
+  PBST Long: 800
+  Imaging Buffer: 800 
+
+stage durations:
+  Stripping Solution: 1
+  PBST Short: 1
+  PBS: 1
+  Hybridization: 1
+  Ligation Buffer: 1
+  Ligation Solution: 1
+  PBST Long: 1 
+  Imaging Buffer: 1
+
+
+#Serial Devices
+pump port: '/dev/ttyUSB3'
+mvp port: '/dev/ttyUSB2'
+shaker port: '/dev/ttyACM0'
+
