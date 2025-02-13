@@ -14,25 +14,23 @@ from enum import IntEnum
 #   - 6 PBST
 #   - 7 Stripping Solution
 
-# Define the COM port (change this to your specific COM port) using to connect the Arduino board
-# com_port = 'COM5'
 
-# Initialize the serial connection
-# ser = serial.Serial(com_port, baudrate=9600)
 
 
 '''
 Small enumeration for all of our buffers
 '''
 class Buffer(IntEnum):
-    STRIPPING = 6
-    PBST_SHORT = 5
-    PBS = 0
-    HYBRIDIZATION = 1
-    LIGATION_BUFFER = 2
-    LIGATION_SOLUTION = 3
-    PBST_LONG = 5
-    IMAGING = 4
+    TDT_PRE = 1
+    TDT_REACT = 2
+    PBS = 3
+    HYBRIDIZATION = 4
+    SSC = 5
+    PR2 = 6
+    ISS = 7
+    ZW_PR = 8
+    IMAGING = 9
+    CLEAVAGE = 10
 
 class Speed(IntEnum):
     SLOW = 0
@@ -61,7 +59,7 @@ class Fluidics:
 
         self.optimal_volume = self._config['optimal volume'] if optimal_volume == -1 else optimal_volume # optimal volume to clear chamber
         self.sys_vol = self._config['system volume']
-        self.speeds = self._config['speed']
+        self.speeds = self._config['speeds']
         #mapping from mvp valve position to round name
         self.cycle_id = {
             6:"Stripping Solution",
@@ -83,7 +81,6 @@ class Fluidics:
             "Imaging Buffer":4   
         }
         self.optimal_flowrate = self._config['buffer']
-        self.max_flowrate = self._config['max flowrate']
 
         self.stage_durations =  self._config['stage durations']
         self.shaker_duration = self._config['shaker duration']
@@ -99,7 +96,7 @@ class Fluidics:
 
     #@param flowrate: in ml/min
     def rpm2flowrate(self,rpm,m,b):
-        return round(m*rpm + b) 
+        return m*rpm + b 
     
     '''
         Pushes 1 buffer through chamber then pushes air right after
