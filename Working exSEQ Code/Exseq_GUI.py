@@ -253,12 +253,12 @@ class Protocol(tk.Frame):
 class Exseq_GUI():
     def __init__(self,root,*,config_path = './config/config.yaml'):
         self.root = root
-        self.shape = (700,400)
+        self.shape = (750,400)
         self.root.geometry(f'{self.shape[0]}x{self.shape[1]}')
         self.root.title('Exseq Control')
         self.fluidics = Fluidics(config_path=config_path)
         self.exseq_thread = None
-        self.stop = False
+        self.stop = True
         #User Interface
         self.fluid_frame = Fluidics_Frame(self.fluidics,root)
         self.connection = DeviceConnection(self.fluidics,root)
@@ -284,11 +284,13 @@ class Exseq_GUI():
         self.control.grid(row=0,column=1,padx=5,pady=5,sticky='nsew')
         self.run = tk.Button(self.run_frame,text="Run Exseq",command=self.run_exseq,bg="#26ad0a")
         self.run.pack(
-            side=tk.BOTTOM,
+            side=tk.LEFT,
             pady = 5,
         )
         self.kill = tk.Button(self.run_frame,text="Stop Exseq",command=self.cancel,bg="#d11a17")
-        self.kill.pack(side=tk.BOTTOM,pady=5)
+        self.kill.pack(side=tk.LEFT,pady=5)
+        self.bench = tk.Button(self.run_frame,text="On Bench",command=self.on_bench,bg="#26ad0a")
+        self.bench.pack(side=tk.LEFT,padx=5)
         self.run_frame.grid(row=1,column=1,padx=10,pady=10,sticky='s')
     def cancel(self):
         #Will kill code executing
@@ -298,7 +300,7 @@ class Exseq_GUI():
         #If running imaging kill imaging
         if self.protocol.is_connected() and \
             self.protocol.is_running(): self.protocol.stop()
-    def on_bench(self):
+    def _on_bench(self):
         #bench protocol defined in https://docs.google.com/presentation/d/17UVYqIIF_az_IiftN8ygVcyMJdWzFXmNhw3-oyN88vs/edit#slide=id.g32b88c2b297_0_0
         buffers = [
             Buffer.TDT_PRE,Buffer.TDT_REACT,Buffer.PBS,
@@ -309,14 +311,32 @@ class Exseq_GUI():
             20*60,90*60,10*60,
             60*60,10*60,10*60
         ]
+        print("hello bench")
         for i,buffer in enumerate(buffers):
-            for _ in range(repeats[i]):
-                self.fluidics.push_buffer_bench(
-                    buffer.value,durations[i],speed=2
-                )
-                sleep(2)
-        
-        
+            if not self.stop:
+                for _ in range(repeats[i]):
+                    # self.fluidics.push_buffer_bench(
+                    #     buffer.value,durations[i],speed=2
+                    # )
+                    # sleep(2)
+                    print(buffer,durations[i])
+                    sleep(0.1)
+        self.bench['state'] = tk.NORMAL
+        self.bench.config(text="On Bench")
+        self.root.update()
+        self.stop = True
+    def on_bench(self):
+        self.bench["state"] = tk.DISABLED
+        self.bench.config(text = "Running...")   
+        self.root.update()
+        if self.stop:
+            self.exseq_thread = Thread(target=self._on_bench)
+            self.stop = False
+            self.exseq_thread.start()
+        else:
+            print("Thread is running command already Please Stop thread!")
+
+
     #TODO FIll in protocol
     # Function to run imaging and fluidics rounds of exseq
     # This function should be run in a seperate thread to the gui
@@ -324,7 +344,7 @@ class Exseq_GUI():
     def __run(self,speeds,skips):
         if speeds and skips:
             for i,(speed,skip,stage) in \
-                enumerate(zip(speeds,skips,self.fluidics.max_flowrate.keys())):
+                enumerate(zip(speeds,skips,self.fluidics.optimal_flowrate.keys())):
                 if not self.stop:
                 #Imaging
                 #run protocol
@@ -338,7 +358,7 @@ class Exseq_GUI():
         self.run["state"] = tk.NORMAL
         self.run["text"] = "Run Exseq"
         self.root.update()
-        self.stop = False
+        self.stop = True
 
 
     def run_exseq(self):
