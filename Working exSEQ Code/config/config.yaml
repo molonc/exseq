@@ -8,28 +8,48 @@ protocols:
 #Fluid settings
 system volume: 200
 buffer:
-  Stripping Solution: 
+  tdt_pre:
+    speed: 2 
     m: 0.11599561
     b: -0.0142795
-  PBST Short: 
+  tdt_react:
+    speed: 2 
     m: 0.11599561
     b: -0.0142795
-  PBS:
+  pbs:
+    speed: 2
     m: 0.11599561
     b: -0.0142795
-  Hybridization: 
+  hybridization: 
+    speed: 2
     m: 0.11599561
     b: -0.0142795
-  Ligation Buffer: 
+  ssc:
+    speed: 2 
     m: 0.11599561
     b: -0.0142795
-  Ligation Solution:
+  pr2:
+    speed: 2
     m: 0.11599561
     b: -0.0142795
-  PBST Long: 
+  iss: 
+    speed: 2
     m: 0.11599561
     b: -0.0142795
-  Imaging Buffer: 
+  imaging: 
+    speed: 2
+    m: 0.11599561
+    b: -0.0142795
+  zw_pr:
+    speed: 2 
+    m: 0.11599561
+    b: -0.0142795
+  cleavage: 
+    speed: 2
+    m: 0.11599561
+    b: -0.0142795
+  dapi:
+    speed: 2 
     m: 0.11599561
     b: -0.0142795
 optimal volume:
@@ -46,26 +66,33 @@ time between stages: 1
 shaker duration: 0.075
 
 skip stages:
-  Stripping Solution: 1
-  PBST Short: 1
-  PBS: 1
-  Hybridization: 1
-  Ligation Buffer: 1
-  Ligation Solution: 1
-  PBST Long: 1 
-  Imaging Buffer: 1 
+  tdt_pre: 1
+  tdt_react: 1
+  pbs: 1
+  hybridization: 1
+  ssc: 1
+  pr2: 1
+  iss: 1 
+  imaging: 1 
+  zw_pr: 1
+  cleavage: 1
+  dapi: 1 
+
 
 
 
 stage durations:
-  Stripping Solution: 1
-  PBST Short: 1
-  PBS: 1
-  Hybridization: 1
-  Ligation Buffer: 1
-  Ligation Solution: 1
-  PBST Long: 1 
-  Imaging Buffer: 1
+  tdt_pre: 1
+  tdt_react: 1
+  pbs: 1
+  hybridization: 1
+  ssc: 1
+  pr2: 1
+  iss: 1 
+  imaging: 1 
+  zw_pr: 1
+  cleavage: 1
+  dapi: 1 
 
 
 #Serial Devices
