@@ -290,7 +290,11 @@ class Exseq_GUI():
         #If running imaging kill imaging
         if self.protocol.is_connected() and \
             self.protocol.is_running(): self.protocol.stop()
-    
+    def on_bench(self):
+        #Steps 9
+        #Step 10
+        
+        pass
     #TODO FIll in protocol
     # Function to run imaging and fluidics rounds of exseq
     # This function should be run in a seperate thread to the gui

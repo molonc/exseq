@@ -41,6 +41,11 @@ class Buffer(IntEnum):
     PBST_LONG = 5
     IMAGING = 4
 
+class Speed(IntEnum):
+    SLOW = 0
+    MEDIUM = 1
+    FAST = 2
+
 '''
     Encapsulates  Fluidics functions for Exseq Experiment: 
     @params config_path = path to config file
@@ -88,12 +93,16 @@ class Fluidics:
 
         self.stage_durations =  self._config['stage durations']
         self.shaker_duration = self._config['shaker duration']
+
+    #Connect to fluidics devices all at once
     def connect(self):
         self.pump.connect(self.pump_port)
         self.shaker.connect(self.shaker_port)
         self.mvp.connect(self.mvp_port)
         self.mvp.initialize()
         sleep(5) #wait for pump *protocol doesn't awk*
+
+
     #@param flowrate: in ml/min
     def set_flowrate(self,flowrate):
         return round(flowrate*68.571) 
@@ -103,11 +112,14 @@ class Fluidics:
         @params: 
         - buffer: buffer id or mvp valve position - 1;  best to use Buffer enum
         - shake: whether the chamber should be shaken after fluidics rounds
-        - volume: desired volume to push
+        - duration: How long to push + incubate for before draining
+        - speed: which [0,1,2] speed to push at use speed enum to improve readability
         - air_valve: which position on the mvp is connected to air
-        - vent: if air should be pushed after the buffer (smae volume pushed)
     '''
-    def _push_buffer(self,buffer:int,shake:bool = False,volume:int = -1,vent:bool = True,air_valve:int = 0):
+    def _push_buffer_bench(self,buffer:int,duration:int,speed:int=3,*
+                           ,shake:bool = True,air_valve:int = 0):
+        
+        #tilt so buffer enters through lower side of chamber
         self.shaker.move_servo(45)
         change_valve_pos(self.mvp,0, (buffer % 8)) # out of bounds protection valve goes from 1-8
 
@@ -115,33 +127,32 @@ class Fluidics:
 
         # calculates as optimal_volume / buffer max speed * 60
         #volume is in 10* ul and flowrate is in 10* ul/min * 100)
-        vol = volume if volume != -1 else self.optimal_volume
-        push_duration = 60 * (vol / (flowrate * 100))
+
+        #Calcultes how long to push for to fill system at speed
+        push_duration = self.optimal_volume / flowrate
+        incubate_duration = duration - push_duration
+        if incubate_duration < 0: print("Warning: Not enough time to fill chamber with this speed")
         sleep(2)
         start = time()
         self.pump.push(self.set_flowrate(flowrate) *100)
         sleep(push_duration)
-        self.pump.stop()
-        if vent:
-            assert air_valve < 8 and "Illegal valve number"
+        #System should be full
+        sleep(2)
+
+        #shake while pushing to avoid bubbles
+        while time() - start < duration:
             self.shaker.move_servo(135)
-            change_valve_pos(self.mvp,0, air_valve) 
             sleep(2)
-            start = time()
-            self.pump.push(self.set_flowrate(flowrate) *100)
-            sleep(push_duration)
-            self.pump.stop()
+            self.shaker.move_servo(45)
+            sleep(2)
+        self.shaker.move_servo(90)
+
+        self.pump.stop()
 
 
-        #shakes coverslip to avoid bubbles?  only for 3 cycles
-        if shake:
-            start = time()
-            while time() - start <= self.shaker_duration:
-                self.shaker.move_servo(135)
-                sleep(0.5)
-                self.shaker.move_servo(45)
-                sleep(2)
-            self.shaker.move_servo(90)
+
+
+            
         
 
 
