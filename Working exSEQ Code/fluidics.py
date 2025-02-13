@@ -128,7 +128,7 @@ class Fluidics:
         # calculates as optimal_volume / buffer max speed * 60
         #volume is in 10* ul and flowrate is in 10* ul/min * 100)
 
-        #Calcultes how long to push for to fill system at speed
+        #Calculates how long to push for to fill system at speed
         push_duration = self.optimal_volume / flowrate
         incubate_duration = duration - push_duration
         if incubate_duration < 0: print("Warning: Not enough time to fill chamber with this speed")
@@ -146,7 +146,13 @@ class Fluidics:
             self.shaker.move_servo(45)
             sleep(2)
         self.shaker.move_servo(90)
+        self.pump.stop()
 
+        # drain with air
+        self.shaker.move_servo(135)
+        change_valve_pos(self.mvp,0, (air_valve % 8)) # out of bounds protection valve goes from 1-8
+        self.pump.push(self.set_flowrate(flowrate) *100)
+        sleep(push_duration)
         self.pump.stop()
 
 
