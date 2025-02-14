@@ -269,19 +269,31 @@ class DeviceControl(ttk.LabelFrame):
     just input string protocol names from the Fusion App
 '''
 class Protocol(tk.Frame):
-    def __init__(self,config,root):
+    def __init__(self,config,root,*,max_rounds:int = 8):
         super().__init__(root)
 
 
         self.protocols = config['protocols']
+        self.imaging_rounds = [i+1 for i in range(max_rounds)] 
         # #draw
         tk.Label(self,text="Choose Protocol").pack(padx=5)
         self.protocol = ttk.Combobox(self,values = self.protocols,width=20)
         self.protocol.set(self.protocols[0] if len(self.protocols) > 0 else 'No Protocol')
-        self.protocol.pack(padx=5)
+        self.rounds = ttk.Combobox(self,values=self.imaging_rounds,width=3)
+        self.rounds.set(self.imaging_rounds[0] if len(self.imaging_rounds)>0 else 0)
+        self.protocol.pack(side = tk.LEFT,padx=5)
+        self.rounds.pack(side = tk.LEFT,padx=5)
+    def lock(self):
+        self.rounds.config(state = tk.DISABLED)
+        self.protocol.config(state=tk.DISABLED)
+    def unlock(self):
+        self.rounds.config(state = tk.NORMAL)
+        self.protocol.config(state=tk.NORMAL)
     def run(self):
         protocol = self.protocol.get()
         run(protocol)
+    def get_rounds(self):
+        return int(self.rounds.get())
     def is_running(self):
         return get_state() == 'running'
     def stop(self):
@@ -445,11 +457,11 @@ class Exseq_GUI():
     '''
         Functions to run all rounds of exseq
     '''
-    def __exseq(self,rounds):
+    def __exseq(self):
         print("running")
         #prepare for imaging
         self.__on_scope(cleavage=False)
-        for i in range(rounds):
+        for i in range(self.protocol.get_rounds()):
             if not self.stop:
                 # Imaging
                 if not self.sim:
@@ -469,6 +481,7 @@ class Exseq_GUI():
 
 
         self.run["state"] = tk.NORMAL
+        self.protocol.unlock()
         self.fluid_frame.unlock()
         self.run["text"] = "Run Exseq"
         self.root.update()
@@ -494,8 +507,9 @@ class Exseq_GUI():
         
         if self.stop:
             self.fluid_frame.lock()
+            self.protocol.lock()
             self.stop = False
-            self.exseq_thread = Thread(target=self.__exseq,args=[8])
+            self.exseq_thread = Thread(target=self.__exseq)
             self.exseq_thread.start()
         else:
             print("Thread is already running make sure to stop thread!")
