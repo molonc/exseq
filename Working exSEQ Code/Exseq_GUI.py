@@ -283,6 +283,7 @@ class Protocol(tk.Frame):
         self.rounds.set(self.imaging_rounds[0] if len(self.imaging_rounds)>0 else 0)
         self.protocol.pack(side = tk.LEFT,padx=5)
         self.rounds.pack(side = tk.LEFT,padx=5)
+    
     def lock(self):
         self.rounds.config(state = tk.DISABLED)
         self.protocol.config(state=tk.DISABLED)
@@ -471,8 +472,7 @@ class Exseq_GUI():
                     sleep(2)
                     while self.protocol.is_running():
                         sleep(5)
-                else:
-                    
+                else:   
                     print(f"Imaging {self.protocol.protocol.get()}")
                     sleep(1)
                     
