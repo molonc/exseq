@@ -29,8 +29,8 @@ class Fluidics_Frame(ttk.LabelFrame):
 
         self.entries = {}
         self.skips = {}
+        self.buttons = {}
         for i,stage in enumerate(self.fluids.optimal_flowrate.keys()):
-            mapping = self.fluids.optimal_flowrate[stage]
             strvar = tk.StringVar(
                 value=str(self.fluids.optimal_flowrate[stage]['speed'])
                 
@@ -48,14 +48,16 @@ class Fluidics_Frame(ttk.LabelFrame):
                 row=i,column=1,padx = 5,pady = 5
             )
             self.skips[stage] = tk.BooleanVar(value=False)
-            tk.Checkbutton(
+            self.buttons[stage] = tk.Checkbutton(
                 self.speed_frame,
                 text = "Skip",
                 command=self.update_entries,
                 variable=self.skips[stage]
-            ).grid(row=i,column=3,padx=5)
+            )
+            self.buttons[stage].grid(row=i,column=3,padx=5)
         tk.Label(self,text = "Flowrate Settings").pack(side=tk.TOP)
         self.speed_frame.pack()
+        print(self.buttons)
 
 
     def validate(self,accept_type,action):
@@ -71,6 +73,37 @@ class Fluidics_Frame(ttk.LabelFrame):
                 self.entries[stage].config(state = tk.DISABLED)
             else:
                 self.entries[stage].config(state = tk.NORMAL)
+
+    def get_speed(self,buffer:Buffer) -> int:
+        speed = 0
+        try: speed = self.entries[buffer.name.lower()].get()
+        except KeyError: 
+            print(f"{buffer.name.lower()} not in speed entries")
+            return -2
+
+        try: speed = int(speed)
+        except ValueError: 
+            print(f"{buffer.name.lower()} speed entry is empty!")
+            return -1
+
+        return speed
+    def is_skip(self,buffer):
+        skip = False
+        try: skip = self.skips[buffer.name.lower()].get()
+        except KeyError: 
+            print(f"{buffer.name} not in skips")
+            return -1
+        return int(skip)
+        
+    def lock(self):
+        
+        for stage in self.fluids.optimal_flowrate.keys():
+            self.entries[stage].config(state = tk.DISABLED)
+            self.buttons[stage].config(state = tk.DISABLED)
+    def unlock(self):
+        for stage in self.fluids.optimal_flowrate.keys():
+            self.entries[stage].config(state = tk.NORMAL)
+            self.buttons[stage].config(state = tk.NORMAL)
 
 '''
     Class to handle Serial connection to each device
@@ -320,19 +353,7 @@ class Exseq_GUI():
         #If running imaging kill imaging
         if self.protocol.is_connected() and \
             self.protocol.is_running(): self.protocol.stop()
-    def get_speed(self,buffer:Buffer) -> int:
-        speed = 0
-        try: speed = self.fluid_frame.entries[buffer.name.lower()].get()
-        except KeyError: 
-            print(f"{buffer.name.lower()} not in speed entries")
-            return -2
 
-        try: speed = int(speed)
-        except ValueError: 
-            print(f"{buffer.name.lower()} speed entry is empty!")
-            return -1
-
-        return speed
         
     '''
         These functions interact with the fluidics object to run different fluidics rounds
@@ -360,17 +381,19 @@ class Exseq_GUI():
         for i,buffer in enumerate(buffers):
             if not self.stop:
                 for _ in range(repeats[i]):
-                    speed = self.get_speed(buffer)
-                    if speed < 0: self.cancel()
-                    if not self.sim:
+                    speed = self.fluid_frame.get_speed(buffer)
+                    skip = self.fluid_frame.is_skip(buffer)
+                    if speed < 0 or skip < 0 : self.cancel()
+                    if not self.sim and not bool(skip):
                         self.fluidics.push_buffer_bench(
                             buffer.value,durations[i],speed=speed
                         )
 
-
-                    print(buffer.name,durations[i],speed)
-                    sleep(0.1)
+                    if not skip:
+                        print(buffer.name,durations[i],speed)
+                        sleep(0.1)
         self.bench['state'] = tk.NORMAL
+        self.fluid_frame.unlock()
         self.bench.config(text="On Bench")
         self.root.update()
         self.stop = True
@@ -407,12 +430,14 @@ class Exseq_GUI():
         for i, buffer in enumerate(buffers):
             if not self.stop:
                 for _ in range(repeats[i]):
-                    speed = self.get_speed(buffer)
-                    if speed < 0: self.cancel()  
-                    print(buffer.name,durations[i],speed)
-                    sleep(0.1)
+                    speed = self.fluid_frame.get_speed(buffer)
+                    skip = self.fluid_frame.is_skip(buffer)
+                    if speed < 0 or skip < 0 : self.cancel() 
+                    if not skip:
+                        print(buffer.name,durations[i],speed)
+                        sleep(0.1)
 
-                    if not self.sim:
+                    if not self.sim and not bool(skip):
                         self.fluidics.push_buffer_scope(buffer.value,durations[i],speed=speed)
 
 
@@ -444,6 +469,7 @@ class Exseq_GUI():
 
 
         self.run["state"] = tk.NORMAL
+        self.fluid_frame.unlock()
         self.run["text"] = "Run Exseq"
         self.root.update()
         self.stop = True
@@ -454,6 +480,7 @@ class Exseq_GUI():
         self.bench.config(text = "Running...")   
         self.root.update()
         if self.stop:
+            self.fluid_frame.lock()
             self.exseq_thread = Thread(target=self.__on_bench)
             self.stop = False
             self.exseq_thread.start()
@@ -464,7 +491,9 @@ class Exseq_GUI():
         self.run["state"] = tk.DISABLED
         self.run.config(text="Running...")
         self.root.update()
+        
         if self.stop:
+            self.fluid_frame.lock()
             self.stop = False
             self.exseq_thread = Thread(target=self.__exseq,args=[8])
             self.exseq_thread.start()
