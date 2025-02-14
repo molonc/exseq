@@ -175,7 +175,7 @@ class DeviceControl(ttk.LabelFrame):
 
         self.fluidics = fluids
         self.connections = connection
-        self.valves = list(set(self.fluidics.cycle_id.keys()))
+        self.valves = list(range(8))
         self.flowrate = tk.StringVar(value=str(0.33))
         self.angle = tk.StringVar(value=str(45))
         self.duration = tk.StringVar(value=str(0.075))
@@ -196,7 +196,9 @@ class DeviceControl(ttk.LabelFrame):
         tk.Label(self.control_grid,text="Control Pump:").grid(
             row=1,column=0,sticky='w',pady=5
         )
-        tk.Entry(self.control_grid,textvariable=self.flowrate,width=6).grid(
+        self.speed = ttk.Combobox(self.control_grid,values=[0,1,2],width=6)
+        self.speed.set(0)
+        self.speed.grid(
             row=1,column=1,pady=2
         )
         tk.Label(self.control_grid,text='(ml/min)').grid(
@@ -240,11 +242,11 @@ class DeviceControl(ttk.LabelFrame):
             print('mvp not connected')
     def push(self):
         if self.connections.connection['pump']:
-            flowrate = float(self.flowrate.get())
+            index = int(self.speed.get())
             self.fluidics.pump.set_speed(
-                self.fluidics.set_flowrate(flowrate=flowrate)
+                self.fluidics.speeds[index]
             )
-            self.fluidics.pump.push()
+            self.fluidics.pump.push(self.fluidics.speeds[index] * 100)
         else:
             print('pump not connected')
     def stop_pump(self):
@@ -268,21 +270,27 @@ class DeviceControl(ttk.LabelFrame):
     Class to Choose Imaging Protocol
     just input string protocol names from the Fusion App
 '''
-class Protocol(tk.Frame):
+class Protocol(ttk.LabelFrame):
     def __init__(self,config,root,*,max_rounds:int = 8):
         super().__init__(root)
+        self['text'] = "Imaging Control"
 
 
         self.protocols = config['protocols']
         self.imaging_rounds = [i+1 for i in range(max_rounds)] 
         # #draw
-        tk.Label(self,text="Choose Protocol").pack(padx=5)
-        self.protocol = ttk.Combobox(self,values = self.protocols,width=20)
+        tk.Label(self,text="Choose Protocol").grid(row=1,column=0,padx=5)
+        self.test = tk.Button(self,text="Test Connection",command=self.test_connect)
+        tk.Button(self,text="Image",command=self.run).grid(row=0,column=1)
+        self.test.grid(row=0,column=0)
+        self.protocol = ttk.Combobox(self,values = self.protocols,width=10)
         self.protocol.set(self.protocols[0] if len(self.protocols) > 0 else 'No Protocol')
+        tk.Label(self,text="Imaging Rounds").grid(row=2,column=0)
         self.rounds = ttk.Combobox(self,values=self.imaging_rounds,width=3)
         self.rounds.set(self.imaging_rounds[0] if len(self.imaging_rounds)>0 else 0)
-        self.protocol.pack(side = tk.LEFT,padx=5)
-        self.rounds.pack(side = tk.LEFT,padx=5)
+        self.protocol.grid(row=1,column=1)
+        self.rounds.grid(row=2,column=1)
+        
     
     def lock(self):
         self.rounds.config(state = tk.DISABLED)
@@ -299,6 +307,12 @@ class Protocol(tk.Frame):
         return get_state() == 'running'
     def stop(self):
         stop()
+    def test_connect(self):
+        if self.is_connected():
+            self.test.config(bg = "#26ad0a")
+        else:
+            self.test.config(bg = "#d11a17")
+
     def is_connected(self):
         try:
             s = self.is_running() 
@@ -309,7 +323,7 @@ class Protocol(tk.Frame):
 class Exseq_GUI():
     def __init__(self,root,*,config_path = './config/config.yaml',simulate:bool = False):
         self.root = root
-        self.shape = (750,500)
+        self.shape = (600,550)
         self.root.geometry(f'{self.shape[0]}x{self.shape[1]}')
         self.root.title('Exseq Control')
         self.fluidics = Fluidics(config_path=config_path)
@@ -391,7 +405,7 @@ class Exseq_GUI():
             60*60,10*60,10*60
         ]
         print("hello bench")
-        for i,buffer in enumerate(buffers):
+        for i,buffer in enumerate(buffers[:1]):
             if not self.stop:
                 for _ in range(repeats[i]):
                     speed = self.fluid_frame.get_speed(buffer)
@@ -399,7 +413,7 @@ class Exseq_GUI():
                     if speed < 0 or skip < 0 : self.cancel()
                     if not self.sim and not bool(skip):
                         self.fluidics.push_buffer_bench(
-                            buffer.value,durations[i],speed=speed
+                            buffer,durations[i],speed=speed
                         )
 
                     if not skip:
@@ -440,7 +454,7 @@ class Exseq_GUI():
             repeats = cms_repeats + repeats
             durations = cms_durations + durations
         
-        for i, buffer in enumerate(buffers):
+        for i, buffer in enumerate(buffers[:1]):
             if not self.stop:
                 for _ in range(repeats[i]):
                     speed = self.fluid_frame.get_speed(buffer)
@@ -451,7 +465,7 @@ class Exseq_GUI():
                         sleep(0.1)
 
                     if not self.sim and not bool(skip):
-                        self.fluidics.push_buffer_scope(buffer.value,durations[i],speed=speed)
+                        self.fluidics.push_buffer_scope(buffer,durations[i],speed=speed)
 
 
 
@@ -461,7 +475,7 @@ class Exseq_GUI():
     def __exseq(self):
         print("running")
         #prepare for imaging
-        self.__on_scope(cleavage=False)
+        # self.__on_scope(cleavage=False)
         for i in range(self.protocol.get_rounds()):
             if not self.stop:
                 # Imaging
@@ -520,6 +534,6 @@ if  __name__ == "__main__":
     import os
     os.chdir('Working exSEQ Code')
     root = tk.Tk()
-    exseq = Exseq_GUI(root,simulate=True)
+    exseq = Exseq_GUI(root,simulate=False)
     exseq.root.mainloop()
     os.chdir('..')

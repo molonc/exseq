@@ -17,7 +17,7 @@ class Shaker:
         self.baud = baud
     def connect(self,port = None):
         if not port: port = self.port
-        serial.Serial(port=port,baudrate=self.baud)
+        self.ser = serial.Serial(port=port,baudrate=self.baud)
     def _write(self,cmd:str = 'Read\n'):
         try:
             self.ser.write(cmd.encode())

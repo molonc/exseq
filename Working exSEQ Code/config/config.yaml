@@ -1,6 +1,6 @@
 # Imaging protocols available in Fusion
 protocols: 
-  - 'Hello world'
+  - 'Protocol 8'
   - 'Goodbye World'
 
 
@@ -52,9 +52,7 @@ buffer:
     speed: 2 
     m: 0.11599561
     b: -0.0142795
-optimal volume:
-    m: 0.11599561
-    b: -0.0142795
+optimal volume: 400
 
 speeds:
 - 5
@@ -96,7 +94,7 @@ stage durations:
 
 
 #Serial Devices
-pump port: '/dev/ttyUSB3'
-mvp port: '/dev/ttyUSB2'
-shaker port: '/dev/ttyACM0'
+pump port: 'COM9'
+mvp port: 'COM10'
+shaker port: 'COM6'
 
