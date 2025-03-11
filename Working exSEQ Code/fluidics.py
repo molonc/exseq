@@ -31,7 +31,7 @@ class Buffer(IntEnum):
     ZW_PR = 8
     IMAGING = 9
     CLEAVAGE = 10
-    DAPI = 11
+    DAPI = 1
 
 class Speed(IntEnum):
     SLOW = 0
@@ -94,7 +94,7 @@ class Fluidics:
         
         #tilt so buffer enters through lower side of chamber
         self.shaker.move_servo(45)
-        change_valve_pos(self.mvp,0, (buffer.value % 8)) # out of bounds protection valve goes from 1-8
+        change_valve_pos(self.mvp,0, (buffer.value % 8) + 1) # out of bounds protection valve goes from 1-8
 
         #Use pre-calculated Linear Regression of rpm -> flowrate to calculate flowrate for buffer  
         slope = self.optimal_flowrate[buffer.name.lower()]['m'] 
@@ -130,7 +130,7 @@ class Fluidics:
         self.pump.stop()
 
     def push_buffer_scope(self,buffer:Buffer,duration:int,speed:int = 2):
-        change_valve_pos(self.mvp,0, (buffer.value % 8)) # out of bounds protection valve goes from 1-8
+        change_valve_pos(self.mvp,0, (buffer.value % 8) + 1) # out of bounds protection valve goes from 1-8
 
         #Calculate flowrate from speed and rpm map
         slope = self.optimal_flowrate[buffer.name.lower()]['m'] 
@@ -139,15 +139,17 @@ class Fluidics:
 
         push_duration = self.optimal_volume / flowrate
         incubate_duration = duration - push_duration
-        if incubate_duration < 0: print("Warning: Not enough time to fill chamber with this speed")
-        sleep(2)
         start = time()
-        self.pump.push(self.speeds[speed] *100)
-        sleep(push_duration)
+        self.pump.push(self.speeds[speed] * 100)
+        if incubate_duration < 0: 
+            print("Warning: Not enough time to fill chamber with this speed")
+            sleep(duration)
+        else:
+            sleep(push_duration)
         #System should be full
         sleep(2)
         self.pump.stop()
-        sleep(incubate_duration)
+        if incubate_duration> 0: sleep(incubate_duration)
         
 
 

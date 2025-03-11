@@ -236,7 +236,7 @@ class DeviceControl(ttk.LabelFrame):
             valve = int(self.choose_valve.get())
             change_valve_pos(
                 self.fluidics.mvp,
-                0,valve
+                0,valve + 1
             )
         else:
             print('mvp not connected')
@@ -304,7 +304,7 @@ class Protocol(ttk.LabelFrame):
     def get_rounds(self):
         return int(self.rounds.get())
     def is_running(self):
-        return get_state() == 'running'
+        return get_state().lower() == 'running'
     def stop(self):
         stop()
     def test_connect(self):
@@ -440,6 +440,7 @@ class Exseq_GUI():
         ]
         repeats = [2,1,2,1,1,2]
         durations = [15*60,25*60,15*60,15*60,15*60,15*60]
+        durations = [15,25,15,15,15,15]
 
         
         if cleavage:
@@ -454,7 +455,7 @@ class Exseq_GUI():
             repeats = cms_repeats + repeats
             durations = cms_durations + durations
         
-        for i, buffer in enumerate(buffers[:1]):
+        for i, buffer in enumerate(buffers):
             if not self.stop:
                 for _ in range(repeats[i]):
                     speed = self.fluid_frame.get_speed(buffer)
@@ -475,7 +476,7 @@ class Exseq_GUI():
     def __exseq(self):
         print("running")
         #prepare for imaging
-        # self.__on_scope(cleavage=False)
+        self.__on_scope(cleavage=False)
         for i in range(self.protocol.get_rounds()):
             if not self.stop:
                 # Imaging
@@ -486,12 +487,13 @@ class Exseq_GUI():
                     sleep(2)
                     while self.protocol.is_running():
                         sleep(5)
+                        print(get_state())
                 else:   
                     print(f"Imaging {self.protocol.protocol.get()}")
                     sleep(1)
                     
                 #Fluidics
-                self.__on_scope(cleavage=True)
+                self.__on_scope(cleavage=False)
 
 
         self.run["state"] = tk.NORMAL
@@ -532,8 +534,7 @@ class Exseq_GUI():
 
 if  __name__ == "__main__":
     import os
-    os.chdir('Working exSEQ Code')
+
     root = tk.Tk()
     exseq = Exseq_GUI(root,simulate=False)
     exseq.root.mainloop()
-    os.chdir('..')

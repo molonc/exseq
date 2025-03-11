@@ -1,6 +1,7 @@
 # Imaging protocols available in Fusion
 protocols: 
   - 'Protocol 8'
+  - 'test1'
   - 'Goodbye World'
 
 
@@ -54,6 +55,7 @@ buffer:
     b: -0.0142795
 optimal volume: 400
 
+# Pump Speed in rpm
 speeds:
 - 5
 - 15 
